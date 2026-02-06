@@ -521,6 +521,21 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
 
+## 📧 Contact & Hire Me
+
+| Platform | Link |
+|----------|------|
+| **Email** | [mrali.hassan997@gmail.com](mailto:mrali.hassan997@gmail.com) |
+| **Upwork** | [Hire me on Upwork](https://www.upwork.com/freelancers/~010950841656437833) |
+
+Looking for custom AI solutions for your business? I specialize in:
+- 🤖 AI Agents & Automation
+- 📄 Document Processing & OCR
+- 🔍 Intelligent Search Systems
+- 🌐 Web Scraping & Data Extraction
+
+---
+
 ## 📜 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
