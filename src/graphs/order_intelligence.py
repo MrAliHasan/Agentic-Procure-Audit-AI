@@ -478,8 +478,45 @@ async def generate_node(state: OrderIntelligenceState) -> dict:
         else:
             analysis = {"raw_response": response}
         
+        # EXTRACT STRUCTURED BID VARIABLES
+        # Combine document text + LLM response for extraction
+        from src.tools.bid_extractor import BidExtractor, BidVariables
+        
+        bid_extractor = BidExtractor()
+        
+        # Get internal document text for extraction
+        internal_doc_text = ""
+        for doc in documents:
+            doc_text = doc.get("text", "") or ""
+            if doc_text:
+                file_name = doc.get("metadata", {}).get("file_name", "document")
+                internal_doc_text += f"\n--- {file_name} ---\n{doc_text}\n"
+        
+        # Extract from document text first (most reliable)
+        doc_source = "Internal Document"
+        if internal_doc_text.strip():
+            bid_vars = bid_extractor.extract_from_text(
+                internal_doc_text, 
+                source=doc_source,
+                llm_analysis=analysis,
+                query_context=query  # Pass query for vendor priority matching
+            )
+        else:
+            # Fallback: extract from LLM response + web content
+            combined_text = response
+            for content in full_content[:3]:
+                combined_text += f"\n{content.get('content', '')}"
+            
+            bid_vars = bid_extractor.extract_from_text(
+                combined_text,
+                source="Web + LLM Analysis",
+                llm_analysis=analysis,
+                query_context=query  # Pass query for vendor priority matching
+            )
+        
         return {
             "analysis": analysis,
+            "bid_variables": bid_vars.to_dict(),
             "final_answer": response,
             "reasoning_steps": ["Generated final analysis"]
         }
@@ -488,6 +525,7 @@ async def generate_node(state: OrderIntelligenceState) -> dict:
         await llm.close()
         return {
             "analysis": {"error": str(e)},
+            "bid_variables": {},
             "final_answer": f"Analysis generation failed: {str(e)}",
             "error": str(e)
         }
@@ -608,6 +646,7 @@ async def analyze_query(
     return {
         "query": query,
         "analysis": result.get("analysis"),
+        "bid_variables": result.get("bid_variables", {}),
         "final_answer": result.get("final_answer"),
         "reasoning_chain": result.get("reasoning_steps", []),
         "sources": {

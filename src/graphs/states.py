@@ -35,6 +35,7 @@ class OrderIntelligenceState(TypedDict):
     
     # Final output
     analysis: Optional[dict]
+    bid_variables: Optional[dict]  # Structured bid data (vendor, price, currency, etc.)
     final_answer: str
     
     # Control flow

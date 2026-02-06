@@ -75,6 +75,47 @@ def analyze(query: str, criteria: tuple, json_output: bool, verbose: bool, save:
     else:
         console.print(Panel(Markdown(result.get("final_answer", "No result")), title="Analysis Result"))
         
+        # Show extracted bid variables if present
+        bid_vars = result.get("bid_variables", {})
+        if bid_vars and any(v.get("value") for v in bid_vars.values()):
+            console.print("\n[bold cyan]📋 Extracted Bid Variables:[/bold cyan]")
+            
+            bid_table = Table(show_header=True, header_style="bold magenta")
+            bid_table.add_column("Field", style="cyan")
+            bid_table.add_column("Value", style="green") 
+            bid_table.add_column("Confidence", style="yellow")
+            bid_table.add_column("Source", style="dim")
+            
+            field_labels = {
+                "vendor_name": "Vendor",
+                "total_price": "Total Price",
+                "currency": "Currency",
+                "bid_date": "Bid Date",
+                "valid_until": "Valid Until",
+                "specifications": "Specifications",
+                "delivery_terms": "Delivery",
+                "warranty": "Warranty",
+                "tender_reference": "Reference",
+            }
+            
+            for key, label in field_labels.items():
+                field = bid_vars.get(key, {})
+                value = field.get("value")
+                if value is not None:
+                    # Format price with commas
+                    if key == "total_price" and isinstance(value, (int, float)):
+                        value_str = f"{value:,.0f}"
+                    else:
+                        value_str = str(value)[:60]
+                    
+                    conf = field.get("confidence", 0)
+                    conf_str = f"{conf:.0%}" if conf else "-"
+                    source = field.get("source", "")[:30]
+                    
+                    bid_table.add_row(label, value_str, conf_str, source)
+            
+            console.print(bid_table)
+        
         # Show sources
         sources = result.get("sources", {})
         console.print(f"\n[dim]Sources: {sources.get('vendors', 0)} vendors, {sources.get('documents', 0)} documents, {sources.get('web_results', 0)} web results[/dim]")
