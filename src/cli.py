@@ -304,7 +304,113 @@ def process_doc(file_path: str, doc_type: str):
         console.print(f"\n[yellow]Warnings: {', '.join(result.warnings)}[/yellow]")
 
 
-# ============== Web Research Commands ==============
+@docs.command("add")
+@click.argument("file_path", type=click.Path(exists=True))
+@click.option("--type", "-t", "doc_type", default="general", 
+              type=click.Choice(["general", "contract", "invoice", "bid", "report"]),
+              help="Document type for categorization")
+@click.option("--description", "-d", default="", help="Optional description")
+def add_doc(file_path: str, doc_type: str, description: str):
+    """Add a document to the knowledge base (vector store)."""
+    from src.storage.chroma_store import VectorStore
+    from src.tools.ocr import DocumentOCR
+    from pathlib import Path
+    import hashlib
+    
+    async def run():
+        file = Path(file_path)
+        
+        # Extract text from document
+        ocr = DocumentOCR()
+        try:
+            with console.status(f"Extracting text from {file.name}..."):
+                text = await ocr.extract_text(str(file))
+        except Exception as e:
+            return {"success": False, "error": f"OCR failed: {str(e)}"}
+        
+        if not text or not text.strip():
+            return {"success": False, "error": "No text extracted from document"}
+        
+        # Generate document ID
+        doc_id = hashlib.md5(f"{file.name}_{text[:100]}".encode()).hexdigest()[:16]
+        
+        # Store in ChromaDB using VectorStore
+        store = VectorStore()
+        with console.status("Adding to vector store..."):
+            # Add to documents collection with proper API
+            await store.add_documents(
+                texts=[text],
+                metadatas=[{
+                    "id": doc_id,
+                    "file_name": file.name,
+                    "file_path": str(file.absolute()),
+                    "type": doc_type,
+                    "description": description,
+                }],
+                ids=[doc_id],
+                collection="documents"
+            )
+        
+        return {
+            "success": True,
+            "doc_id": doc_id,
+            "file_name": file.name,
+            "text_length": len(text),
+            "type": doc_type
+        }
+    
+    result = asyncio.run(run())
+    
+    if result.get("success"):
+        console.print(Panel(
+            f"[bold green]✓ Document Added to Knowledge Base[/bold green]\n\n"
+            f"📄 File: {result['file_name']}\n"
+            f"🔑 ID: {result['doc_id']}\n"
+            f"📝 Type: {result['type']}\n"
+            f"📊 Text extracted: {result['text_length']:,} characters",
+            title="Document Ingested"
+        ))
+    else:
+        console.print(f"[red]Error: {result.get('error')}[/red]")
+
+
+@docs.command("list")
+def list_docs():
+    """List all documents in the knowledge base."""
+    from src.storage.chroma_store import VectorStore
+    
+    async def run():
+        store = VectorStore()
+        # Get all documents from documents collection
+        results = await store.similarity_search(
+            query="document contract bid report invoice",  # Broad query to get all
+            k=100,
+            collection="documents"
+        )
+        return results
+    
+    docs = asyncio.run(run())
+    
+    if not docs:
+        console.print("[yellow]No documents in knowledge base.[/yellow]")
+        return
+    
+    table = Table(title="Documents in Knowledge Base")
+    table.add_column("ID", style="cyan")
+    table.add_column("File Name", style="green")
+    table.add_column("Type", style="magenta")
+    table.add_column("Score", style="dim")
+    
+    for doc in docs:
+        meta = doc.get("metadata", {})
+        table.add_row(
+            meta.get("id", "")[:12],
+            meta.get("file_name", "Unknown"),
+            meta.get("type", "general"),
+            f"{doc.get('score', 0):.2f}"
+        )
+    
+    console.print(table)
 
 @cli.group()
 def research():

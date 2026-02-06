@@ -84,8 +84,11 @@ async def retrieve_node(state: OrderIntelligenceState) -> dict:
         query_embedding = embeddings.embed_query(query)
         
         for doc in documents:
-            doc_text = f"{doc.get('title', '')} {doc.get('content', '')[:500]}"
-            doc_embedding = embeddings.embed_query(doc_text[:500])
+            # similarity_search returns: text, metadata (with file_name, type, etc.), score
+            doc_text = doc.get('text', '') or ''
+            file_name = doc.get('metadata', {}).get('file_name', '')
+            doc_embedding_text = f"{file_name} {doc_text[:500]}"
+            doc_embedding = embeddings.embed_query(doc_embedding_text[:500])
             
             dot_product = sum(a * b for a, b in zip(query_embedding, doc_embedding))
             norm1 = math.sqrt(sum(a * a for a in query_embedding))
@@ -93,7 +96,7 @@ async def retrieve_node(state: OrderIntelligenceState) -> dict:
             
             similarity = dot_product / (norm1 * norm2) if norm1 > 0 and norm2 > 0 else 0.0
             
-            if similarity >= 0.5:
+            if similarity >= 0.4:  # Lower threshold for internal docs
                 doc["relevance_score"] = round(similarity, 3)
                 relevant_docs.append(doc)
     
@@ -230,7 +233,7 @@ async def web_search_node(state: OrderIntelligenceState) -> dict:
             full_content.extend(vd.get("full_content", []))
             all_results.extend(vd.get("search_results", []))
         
-        # Add document text to full content
+        # Add document text to full content (from web downloads)
         for doc_text in doc_search_results.get("extracted_texts", []):
             full_content.append({
                 "url": doc_text.get("source_url", ""),
@@ -238,36 +241,79 @@ async def web_search_node(state: OrderIntelligenceState) -> dict:
                 "content": doc_text.get("text", "")[:5000]
             })
         
-        # AGGRESSIVE PRICING SCRAPING
+        # CRITICAL: Add INTERNAL documents from vector store to full_content
+        # These are your private/internal docs like contracts, bids, etc.
+        internal_docs = state.get("documents", [])
+        for doc in internal_docs:
+            doc_text = doc.get("text", "") or ""
+            file_name = doc.get("metadata", {}).get("file_name", "Internal Document")
+            doc_type = doc.get("metadata", {}).get("type", "document")
+            
+            if doc_text.strip():
+                full_content.insert(0, {  # Insert at start for priority
+                    "url": f"internal://{file_name}",
+                    "title": f"[INTERNAL {doc_type.upper()}] {file_name}",
+                    "content": doc_text[:8000]  # More content for internal docs
+                })
+        
+        # UNIVERSAL PRICING EXTRACTION (works for ANY content)
         real_pricing = []
         try:
             from src.tools.pricing_scraper import PricingScraperTool
             pricing_scraper = PricingScraperTool()
             
-            # Search for product prices if query mentions specific parts
-            price_comparison = await pricing_scraper.compare_prices_across_vendors(
-                query,
-                vendors=["mouser", "digikey", "arrow", "newark"]
-            )
+            # Use LLM to extract pricing from the scraped content
+            all_content_text = "\n".join([
+                f"{c.get('title', '')}: {c.get('content', '')}" 
+                for c in full_content[:5]  # Top 5 pages
+            ])
             
-            if price_comparison.get("prices"):
-                real_pricing = price_comparison["prices"]
+            if all_content_text.strip():
+                # Use LLM to intelligently extract ANY pricing info
+                pricing_result = await pricing_scraper.llm_extract_pricing(
+                    content=all_content_text[:10000],
+                    query_context=query
+                )
                 
-                # Add pricing info to full content for LLM context
-                pricing_text = f"\n\n## Real-Time Pricing Data\n"
-                pricing_text += f"Query: {query}\n"
-                pricing_text += f"Best Price: ${price_comparison.get('best_price', 'N/A')} from {price_comparison.get('best_vendor', 'N/A')}\n\n"
-                pricing_text += "| Vendor | Price | URL |\n|--------|-------|-----|\n"
-                for p in price_comparison.get("price_comparison_table", []):
-                    pricing_text += f"| {p['vendor']} | {p['price']} | {p['url'][:50]}... |\n"
-                
-                full_content.append({
-                    "url": "pricing_comparison",
-                    "title": "Real-Time Price Comparison",
-                    "content": pricing_text
-                })
+                if pricing_result.get("success") and pricing_result.get("prices_found"):
+                    # Format pricing for LLM context
+                    pricing_text = f"\n\n## Extracted Pricing Data\n"
+                    pricing_text += f"Query: {query}\n\n"
+                    
+                    for price_item in pricing_result.get("prices_found", [])[:10]:
+                        item_name = price_item.get("item", "Unknown")
+                        price_val = price_item.get("price", "N/A")
+                        currency = price_item.get("currency", "")
+                        price_type = price_item.get("type", "")
+                        details = price_item.get("details", "")
+                        
+                        pricing_text += f"- **{item_name}**: {price_val} {currency} ({price_type})"
+                        if details:
+                            pricing_text += f" - {details}"
+                        pricing_text += "\n"
+                        
+                        real_pricing.append({
+                            "item": item_name,
+                            "price": price_val,
+                            "currency": currency,
+                            "type": price_type
+                        })
+                    
+                    if pricing_result.get("pricing_structure"):
+                        pricing_text += f"\n**Pricing Structure**: {pricing_result['pricing_structure']}\n"
+                    
+                    if pricing_result.get("key_takeaways"):
+                        pricing_text += "\n**Key Insights**:\n"
+                        for insight in pricing_result.get("key_takeaways", []):
+                            pricing_text += f"- {insight}\n"
+                    
+                    full_content.append({
+                        "url": "pricing_extraction",
+                        "title": "LLM-Extracted Pricing Data",
+                        "content": pricing_text
+                    })
         except Exception as e:
-            print(f"Pricing scrape error: {e}")
+            print(f"LLM Pricing extraction error: {e}")
         
         # Deduplicate
         seen_urls = set()

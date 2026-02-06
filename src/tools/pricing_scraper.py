@@ -1,6 +1,6 @@
 """
-Pricing Scraper - Aggressive extraction of real prices from distributor sites
-Targets: Mouser, DigiKey, Arrow, Newark, RS Components, etc.
+Pricing Scraper - Aggressive extraction of real prices from ANY vendor/platform
+Supports: Electronic distributors, E-commerce platforms, SaaS products, General vendors
 """
 import asyncio
 import re
@@ -12,8 +12,11 @@ from urllib.parse import urljoin, urlparse, quote_plus
 
 class PricingScraperTool:
     """
-    Aggressive pricing scraper for electronic component distributors.
-    Scrapes actual product pages for real-time pricing data.
+    Universal pricing scraper that works for:
+    - Electronic component distributors (Mouser, DigiKey, etc.)
+    - E-commerce platforms (Shopify, Daraz, WooCommerce, etc.)
+    - SaaS products (subscription pricing)
+    - General product pages
     """
     
     def __init__(self, timeout: int = 30):
@@ -24,7 +27,7 @@ class PricingScraperTool:
             "Accept-Language": "en-US,en;q=0.5",
         }
         
-        # Distributor-specific pricing patterns
+        # Distributor-specific pricing patterns (electronics)
         self.price_patterns = {
             "mouser": [
                 r'(?:Price|Unit Price)[:\s]*\$?([\d,]+\.?\d*)',
@@ -46,13 +49,46 @@ class PricingScraperTool:
             "rs-online": [
                 r'(?:Price)[:\s]*\$?([\d,]+\.?\d*)',
             ],
+            # E-commerce platform patterns
+            "ecommerce": [
+                r'(?:commission|fee)[:\s]*(\d+(?:\.\d+)?)\s*%',
+                r'(\d+(?:\.\d+)?)\s*%\s*(?:commission|fee|per sale)',
+                r'(?:monthly|annual)[:\s]*(?:PKR|Rs\.?|USD|\$)\s*([\d,]+)',
+                r'(?:PKR|Rs\.?)\s*([\d,]+)(?:/month|/year)?',
+                r'(?:starting|from)[:\s]*(?:PKR|Rs\.?|\$)?\s*([\d,]+)',
+                r'(\d+(?:\.\d+)?)\s*%\s*(?:transaction|payment)',
+                r'(?:subscription|plan)[:\s]*\$?([\d,]+)',
+            ],
+            # SaaS pricing patterns
+            "saas": [
+                r'\$([\d,]+(?:\.\d+)?)\s*/\s*(?:mo|month)',
+                r'\$([\d,]+(?:\.\d+)?)\s*/\s*(?:yr|year)',
+                r'(?:Basic|Pro|Enterprise)[:\s]*\$([\d,]+)',
+                r'(?:free trial|free plan)',
+                r'(\d+)\s*(?:day|month)\s*free',
+            ],
             "generic": [
                 r'\$\s*([\d,]+\.?\d{0,2})',
                 r'USD\s*([\d,]+\.?\d{0,2})',
                 r'(?:price|Price)[:\s]*\$?([\d,]+\.?\d*)',
                 r'(?:cost|Cost)[:\s]*\$?([\d,]+\.?\d*)',
+                r'PKR\s*([\d,]+)',
+                r'Rs\.?\s*([\d,]+)',
             ]
         }
+        
+        # Keywords to detect query type
+        self.ecommerce_keywords = [
+            "shopify", "woocommerce", "daraz", "amazon", "alibaba", "olx",
+            "ebay", "magento", "prestashop", "bigcommerce", "platform",
+            "e-commerce", "ecommerce", "marketplace", "seller fees",
+            "commission", "vendor fees"
+        ]
+        self.saas_keywords = [
+            "software", "subscription", "saas", "cloud", "monthly plan",
+            "enterprise", "pro plan", "pricing page"
+        ]
+
     
     def _identify_distributor(self, url: str) -> str:
         """Identify distributor from URL."""
@@ -357,3 +393,129 @@ class PricingScraperTool:
             comparison["best_vendor"] = best["vendor"]
         
         return comparison
+    
+    async def llm_extract_pricing(
+        self,
+        content: str,
+        query_context: str = ""
+    ) -> dict:
+        """
+        Use LLM to intelligently extract pricing from ANY content.
+        
+        This is the universal extraction method - works for:
+        - Product prices
+        - Service fees
+        - Platform commissions
+        - Subscription costs
+        - Any pricing structure
+        
+        Args:
+            content: Page content or text to extract from
+            query_context: Optional context about what user is looking for
+            
+        Returns:
+            dict with extracted pricing data
+        """
+        from src.llm.ollama_client import OllamaClient
+        import json
+        import re
+        
+        llm = OllamaClient(timeout=120)
+        
+        prompt = f"""Extract ALL pricing information from this content.
+
+CONTEXT (what user is researching):
+{query_context[:500] if query_context else "General pricing information"}
+
+CONTENT TO ANALYZE:
+{content[:6000]}
+
+EXTRACT:
+1. Any prices mentioned (products, services, fees, subscriptions)
+2. Commission rates or percentage fees
+3. Pricing tiers or plans
+4. Cost comparisons if mentioned
+5. Currency and price units
+
+OUTPUT FORMAT (JSON):
+{{
+    "prices_found": [
+        {{
+            "item": "What is being priced",
+            "price": "Price value (number or percentage)",
+            "currency": "USD/PKR/EUR/% etc",
+            "type": "product/subscription/commission/fee/other",
+            "details": "Any additional context"
+        }}
+    ],
+    "pricing_structure": "Brief description of how pricing works",
+    "key_takeaways": ["Important pricing insights"]
+}}
+
+Return ONLY valid JSON. Extract ALL prices you can find."""
+
+        try:
+            response = await llm.generate(
+                prompt,
+                system="You are a pricing extraction expert. Extract all pricing information and return only valid JSON.",
+                temperature=0.1
+            )
+            await llm.close()
+            
+            # Parse JSON from response
+            json_match = re.search(r'\{[\s\S]*\}', response)
+            if json_match:
+                result = json.loads(json_match.group())
+                result["extraction_method"] = "llm"
+                result["success"] = True
+                return result
+            
+            return {
+                "success": False,
+                "raw_response": response,
+                "extraction_method": "llm"
+            }
+            
+        except Exception as e:
+            await llm.close()
+            return {
+                "success": False,
+                "error": str(e),
+                "extraction_method": "llm"
+            }
+    
+    async def extract_from_url_with_llm(
+        self,
+        url: str,
+        query_context: str = ""
+    ) -> dict:
+        """
+        Fetch a URL and use LLM to extract pricing.
+        Universal method that works on ANY webpage.
+        """
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True) as client:
+                response = await client.get(url, headers=self.headers)
+                response.raise_for_status()
+                
+                soup = BeautifulSoup(response.text, "lxml")
+                
+                # Remove scripts/styles
+                for element in soup(["script", "style"]):
+                    element.decompose()
+                
+                text = soup.get_text(separator=" ", strip=True)
+                title = soup.title.string if soup.title else ""
+                
+                result = await self.llm_extract_pricing(text, query_context)
+                result["url"] = url
+                result["page_title"] = title[:200]
+                
+                return result
+                
+        except Exception as e:
+            return {
+                "url": url,
+                "success": False,
+                "error": str(e)
+            }
