@@ -489,5 +489,88 @@ class WebResearchTool:
             "urls_found": list(all_urls),
             "sources_used": self.available_sources + ["url_scraper", "ocr"]
         }
-
-
+    
+    async def intelligent_research(
+        self,
+        query: str,
+        num_results: int = 10
+    ) -> dict:
+        """
+        Perform intelligent research using multi-step LLM-guided search.
+        
+        This method:
+        1. Uses LLM to analyze the query and plan search strategy
+        2. Executes multiple targeted searches
+        3. Uses LLM to extract and synthesize information
+        4. Returns structured, actionable data
+        
+        Best for complex queries like:
+        - "Compare e-commerce platform fees in Pakistan"
+        - "Find best suppliers for industrial equipment under $10k"
+        - "What are vendor pricing trends for semiconductors 2026"
+        
+        Args:
+            query: Natural language query
+            num_results: Results per search
+            
+        Returns:
+            dict with structured extracted data
+        """
+        try:
+            from src.agents.intelligent_search import intelligent_search_agent
+            
+            result = await intelligent_search_agent(
+                original_prompt=query,
+                num_results=num_results
+            )
+            
+            # Add metadata
+            result["method"] = "intelligent_research"
+            result["sources_used"] = self.available_sources + ["intelligent_search_agent"]
+            
+            return result
+            
+        except Exception as e:
+            # Fall back to regular deep research
+            print(f"Intelligent research failed: {e}, falling back to deep research")
+            return await self.deep_research_with_scraping(
+                query,
+                max_urls_to_scrape=num_results
+            )
+    
+    async def smart_url_extract(
+        self,
+        url: str,
+        extraction_prompt: str
+    ) -> dict:
+        """
+        SmartScraper-style extraction - fetch URL and use LLM to extract structured data.
+        
+        This works like ScrapeGraphAI's SmartScraperGraph - you provide a URL and
+        describe what you want to extract, and it uses an LLM to intelligently
+        extract that data.
+        
+        Example:
+            result = await tool.smart_url_extract(
+                url="https://example.com/products",
+                extraction_prompt="Extract all product names and prices"
+            )
+        
+        Args:
+            url: URL to fetch and extract from
+            extraction_prompt: Natural language description of what to extract
+            
+        Returns:
+            dict with extracted structured data
+        """
+        try:
+            from src.agents.intelligent_search import smart_url_extract
+            
+            result = await smart_url_extract(url, extraction_prompt)
+            return result
+            
+        except Exception as e:
+            return {
+                "error": str(e),
+                "url": url
+            }
