@@ -74,3 +74,23 @@ htmlcov/
 # Playwright
 playwright/
 .playwright/
+
+# Test documents (don't commit sample PDFs)
+*.pdf
+!docs/*.pdf
+
+# Secrets and credentials
+secrets/
+credentials/
+*.pem
+*.key
+
+# Internal notes and plans
+NOTES.md
+TODO.md
+PLAN.md
+
+# Old/backup README
+README_old.md
+README.bak.md
+
