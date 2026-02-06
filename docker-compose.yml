@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # Ollama Local LLM Service
+  ollama:
+    image: ollama/ollama:latest
+    container_name: soi-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Main API Service
+  api:
+    build: .
+    container_name: soi-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./.env:/app/.env
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Streamlit UI Service
+  ui:
+    build: .
+    container_name: soi-ui
+    command: streamlit run src/ui/app.py --server.port=8501 --server.address=0.0.0.0
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+      - ./.env:/app/.env
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
