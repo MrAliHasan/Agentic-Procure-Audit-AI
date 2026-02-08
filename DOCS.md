@@ -629,7 +629,20 @@ soi research vendor "Vendor Name"
 
 # Market research
 soi research market "category"
+
+# 🏢 Deep Company Research (Enhanced)
+# Includes: executives, funding, market data, hiring, competitors
+soi research company "Salesforce" -o salesforce.json -m salesforce_report.md
 ```
+
+**Company Research Output:**
+- 20 Serper queries for maximum coverage
+- Executives with LinkedIn URLs
+- Financials: funding, valuation, investors
+- Market data: market share, TAM/SAM
+- Hiring: open roles, tech stack, locations
+- News tagged by type (funding/product/partnership)
+- Data sources with real-time search proof
 
 ### Server Command
 

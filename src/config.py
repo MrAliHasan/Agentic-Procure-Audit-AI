@@ -30,6 +30,14 @@ class Settings(BaseSettings):
     # Serper.dev Google Search
     serper_api_key: str = Field(default="", alias="SERPER_API_KEY")
     
+    # Groq LLM (Fast AI for intelligent search)
+    groq_api_key: str = Field(default="", alias="GROQ_API_KEY")
+    groq_model: str = Field(default="llama-3.3-70b-versatile", alias="GROQ_MODEL")
+    
+    # OpenAI LLM (GPT-4o-mini fallback)
+    openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
+    openai_model: str = Field(default="gpt-4o-mini", alias="OPENAI_MODEL")
+    
     # ChromaDB Vector Store
     chroma_persist_dir: str = Field(default="./data/chroma_db", alias="CHROMA_PERSIST_DIR")
     chroma_collection_name: str = Field(default="vendor_intelligence", alias="CHROMA_COLLECTION_NAME")

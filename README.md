@@ -196,20 +196,49 @@ soi docs list
 soi search "contract renewal terms" --local-only
 ```
 
+### 🎯 Lead Generation & Scraping
+
+**AI-powered lead scraping with email extraction:**
+
+| Feature | Description |
+|---------|-------------|
+| **Smart Lead Search** | LLM generates diverse search queries for maximum coverage |
+| **LinkedIn Scraping** | Extract profiles with Gmail addresses |
+| **Email Extraction** | Automatically finds emails from web pages |
+| **Pagination** | Get 100+ leads per search with auto-pagination |
+| **Query Rotation** | Auto-generates new queries if targets not met |
+
+```bash
+# AI-powered lead search with Groq LLM
+soi leads smart "dentists in Miami" -n 100
+
+# LinkedIn profile scraping with Gmail extraction
+soi leads linkedin "software engineers San Francisco" -n 100
+
+# Basic lead scraping
+soi leads scrape "coffee shops Austin" -n 50 -o leads.json
+```
+
+**Output includes:** Name, Email, Phone, Address, Website (or LinkedIn URL)
+
 ---
 
 ### 🖥️ CLI Interface
 
-Beautiful terminal output with tables, colors, and progress indicators:
+Beautiful terminal output with tables, colors, and progress indicators.
+
+> **📖 See [CLI_COMMANDS.md](CLI_COMMANDS.md) for complete command reference.**
 
 | Command | Description |
 |---------|-------------|
 | `soi analyze "query" -v -s` | Analyze with verbose output, save report |
+| `soi research company "name"` | **Deep company research** with executives, funding, market data |
+| `soi leads smart "query" -n 100` | AI-powered lead search with LLM |
+| `soi leads linkedin "query"` | LinkedIn profile scraping with Gmail |
+| `soi leads scrape "query"` | Basic lead scraping |
 | `soi docs add <file>` | Add document to knowledge base |
 | `soi docs list` | List all stored documents |
-| `soi docs process <file>` | Process and extract document fields |
-| `soi add vendor "name"` | Add vendor to database |
-| `soi search "query"` | Search knowledge base |
+| `soi vendors add "name"` | Add vendor to database |
 | `soi status` | Check system health (LLM, ChromaDB, APIs) |
 | `soi ui` | Launch Streamlit dashboard |
 | `soi serve` | Start FastAPI server |

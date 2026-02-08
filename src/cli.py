@@ -514,6 +514,243 @@ def research_market(category: str):
         console.print(f"  [dim]{result.get('url', '')}[/dim]")
 
 
+@research.command("company")
+@click.argument("company_name")
+@click.option("--output", "-o", type=click.Path(), help="Save JSON to file")
+@click.option("--markdown", "-m", type=click.Path(), help="Save markdown report")
+def research_company_cmd(company_name: str, output: str, markdown: str):
+    """
+    🏢 Comprehensive company intelligence report.
+    
+    Generates strategic analysis: SWOT, market position, business model,
+    investment thesis, key risks, opportunities, and contact strategy.
+    
+    Examples:
+    
+        soi research company "Stripe"
+        
+        soi research company "Tesla" -o tesla.json -m tesla_report.md
+    """
+    from src.tools.company_researcher import CompanyResearcher
+    import json
+    
+    async def run():
+        researcher = CompanyResearcher()
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task(f"🔍 Phase 1: Gathering data on {company_name}...", total=None)
+            # Research happens here
+            profile = await researcher.research(company_name)
+            progress.update(task, description="✅ Research complete", completed=True)
+        return profile, researcher.to_dict(profile), researcher.generate_markdown_report(profile)
+    
+    profile, profile_dict, md_report = asyncio.run(run())
+    
+    # ============ Display Comprehensive Report ============
+    console.print(f"\n[bold cyan]══════════════════════════════════════════════════════════════════[/bold cyan]")
+    console.print(f"[bold cyan]    🏢 {profile.name} - Strategic Intelligence Report[/bold cyan]")
+    console.print(f"[bold cyan]══════════════════════════════════════════════════════════════════[/bold cyan]")
+    console.print(f"[dim]Research Date: {profile.research_date} | Queries: {profile.search_queries_used}[/dim]\n")
+    
+    # Executive Summary
+    if profile.strategic_report:
+        console.print(Panel(
+            profile.strategic_report,
+            title="[bold]📋 Executive Summary[/bold]",
+            border_style="blue",
+            padding=(1, 2)
+        ))
+    
+    # Company Overview
+    console.print(f"\n[bold magenta]📊 Company Overview[/bold magenta]")
+    info_table = Table(show_header=False, box=None, padding=(0, 2))
+    info_table.add_column("Field", style="dim", width=15)
+    info_table.add_column("Value", style="white")
+    
+    if profile.website:
+        info_table.add_row("Website", profile.website)
+    if profile.industry:
+        info_table.add_row("Industry", profile.industry)
+    if profile.hq_location:
+        info_table.add_row("Headquarters", profile.hq_location)
+    if profile.founded:
+        info_table.add_row("Founded", profile.founded)
+    if profile.employees:
+        info_table.add_row("Employees", profile.employees)
+    console.print(info_table)
+    
+    if profile.description:
+        console.print(f"\n[italic]{profile.description}[/italic]")
+    
+    # Business Model & Market Position
+    if profile.business_model or profile.market_position:
+        console.print(f"\n[bold green]💼 Business Model[/bold green]")
+        if profile.business_model:
+            console.print(f"  {profile.business_model}")
+        
+        console.print(f"\n[bold green]📈 Market Position[/bold green]")
+        if profile.market_position:
+            console.print(f"  {profile.market_position}")
+        if profile.growth_trajectory:
+            console.print(f"  [dim]Growth: {profile.growth_trajectory}[/dim]")
+    
+    # Financials
+    if profile.funding:
+        console.print(f"\n[bold yellow]💰 Financial Summary[/bold yellow]")
+        for k, v in profile.funding.items():
+            label = k.replace("_", " ").title()
+            console.print(f"  • {label}: [bold]{v}[/bold]")
+    
+    # SWOT Analysis
+    if profile.swot_analysis:
+        console.print(f"\n[bold blue]🎯 SWOT Analysis[/bold blue]")
+        swot_table = Table(show_header=True, header_style="bold", box=None)
+        swot_table.add_column("Strengths ✅", style="green", width=35)
+        swot_table.add_column("Weaknesses ⚠️", style="yellow", width=35)
+        
+        strengths = profile.swot_analysis.get("strengths", [])[:4]
+        weaknesses = profile.swot_analysis.get("weaknesses", [])[:4]
+        for i in range(max(len(strengths), len(weaknesses))):
+            s = strengths[i][:35] if i < len(strengths) else ""
+            w = weaknesses[i][:35] if i < len(weaknesses) else ""
+            swot_table.add_row(s, w)
+        console.print(swot_table)
+        
+        swot_table2 = Table(show_header=True, header_style="bold", box=None)
+        swot_table2.add_column("Opportunities 🚀", style="cyan", width=35)
+        swot_table2.add_column("Threats ⛔", style="red", width=35)
+        
+        opportunities = profile.swot_analysis.get("opportunities", [])[:4]
+        threats = profile.swot_analysis.get("threats", [])[:4]
+        for i in range(max(len(opportunities), len(threats))):
+            o = opportunities[i][:35] if i < len(opportunities) else ""
+            t = threats[i][:35] if i < len(threats) else ""
+            swot_table2.add_row(o, t)
+        console.print(swot_table2)
+    
+    # Key Risks & Opportunities
+    if profile.key_risks:
+        console.print(f"\n[bold red]🔴 Key Risks[/bold red]")
+        for r in profile.key_risks[:5]:
+            console.print(f"  • {r[:70]}")
+    
+    if profile.opportunities:
+        console.print(f"\n[bold green]🟢 Opportunities[/bold green]")
+        for o in profile.opportunities[:5]:
+            console.print(f"  • {o[:70]}")
+    
+    # Investment Thesis
+    if profile.investment_thesis:
+        console.print(f"\n[bold cyan]💎 Investment Thesis[/bold cyan]")
+        console.print(f"  {profile.investment_thesis}")
+    
+    # Competitive Landscape
+    if profile.competitors:
+        console.print(f"\n[bold yellow]⚔️ Competitors[/bold yellow]")
+        console.print(f"  {', '.join(profile.competitors)}")
+    
+    # Key Executives
+    if profile.executives:
+        console.print(f"\n[bold magenta]👔 Key Executives ({len(profile.executives)})[/bold magenta]")
+        exec_table = Table(show_header=True, header_style="bold")
+        exec_table.add_column("Name", style="cyan", max_width=25)
+        exec_table.add_column("Role", style="yellow", max_width=35)
+        exec_table.add_column("LinkedIn", style="blue", max_width=50)
+        
+        for e in profile.executives[:8]:
+            exec_table.add_row(
+                e.name[:25],
+                e.role[:35],
+                e.linkedin_url[:50] if e.linkedin_url else "-"
+            )
+        console.print(exec_table)
+    
+    # Contact Strategy
+    if profile.contact_strategy:
+        console.print(f"\n[bold cyan]📧 Contact Strategy[/bold cyan]")
+        console.print(f"  {profile.contact_strategy}")
+    
+    # Recent News with URLs
+    if profile.recent_news:
+        console.print(f"\n[bold blue]📰 Recent News & Signals[/bold blue]")
+        news_table = Table(show_header=True, header_style="bold", box=None)
+        news_table.add_column("#", style="dim", width=3)
+        news_table.add_column("Title", style="white", max_width=50)
+        news_table.add_column("Source", style="cyan", max_width=20)
+        news_table.add_column("Date", style="dim", max_width=15)
+        
+        for i, n in enumerate(profile.recent_news[:6], 1):
+            news_table.add_row(
+                str(i),
+                n.title[:50],
+                n.source[:20],
+                n.date or "-"
+            )
+        console.print(news_table)
+        
+        # Show URLs separately
+        console.print(f"  [dim]URLs:[/dim]")
+        for i, n in enumerate(profile.recent_news[:4], 1):
+            console.print(f"    [dim]{i}. {n.url[:70]}[/dim]")
+    
+    # Hiring signals
+    if profile.hiring_signals:
+        console.print(f"\n[bold green]🎯 Hiring Signals[/bold green]")
+        for s in profile.hiring_signals:
+            console.print(f"  ✓ {s}")
+    
+    # === REAL-TIME DATA SOURCES ===
+    if profile.data_sources:
+        console.print(f"\n[bold cyan]🔗 Data Sources (Real-Time Search Results)[/bold cyan]")
+        console.print(f"  [dim]Proof of live web search - not cached/training data[/dim]\n")
+        
+        sources_table = Table(show_header=True, header_style="bold", box=None)
+        sources_table.add_column("#", style="dim", width=3)
+        sources_table.add_column("Domain", style="cyan", max_width=25)
+        sources_table.add_column("Title", style="white", max_width=35)
+        sources_table.add_column("Key Data", style="dim", max_width=45)
+        
+        for i, src in enumerate(profile.data_sources[:8], 1):
+            snippet = src.get('snippet', '')[:45] + '...' if len(src.get('snippet', '')) > 45 else src.get('snippet', '')
+            sources_table.add_row(
+                str(i),
+                src.get('domain', '')[:25],
+                src.get('title', '')[:35],
+                snippet
+            )
+        console.print(sources_table)
+        
+        # Show full URLs
+        console.print(f"\n  [dim]Source URLs:[/dim]")
+        for i, src in enumerate(profile.data_sources[:5], 1):
+            console.print(f"    [dim]{i}. {src.get('url', '')[:80]}[/dim]")
+    
+    # === RAW SEARCH SNIPPETS ===
+    if profile.raw_search_snippets:
+        console.print(f"\n[bold yellow]🔍 Raw Search Snippets[/bold yellow]")
+        console.print(f"  [dim]Unprocessed data from live Google search:[/dim]\n")
+        for snippet in profile.raw_search_snippets[:4]:
+            console.print(f"  • [italic]{snippet[:100]}...[/italic]")
+    
+    # Metadata footer
+    console.print(f"\n[dim]{'─' * 70}[/dim]")
+    console.print(f"[dim]📊 Queries: {profile.search_queries_used} | Sources: {profile.sources_scraped} | Data: Real-time Serper API[/dim]")
+    
+    # Save outputs
+    if output:
+        with open(output, "w") as f:
+            json.dump(profile_dict, f, indent=2)
+        console.print(f"\n[green]💾 JSON saved to {output}[/green]")
+    
+    if markdown:
+        with open(markdown, "w") as f:
+            f.write(md_report)
+        console.print(f"[green]📄 Markdown report saved to {markdown}[/green]")
+
+
 # ============== Server Commands ==============
 
 @cli.command()
@@ -644,5 +881,368 @@ def serve(host: str, port: int, reload: bool):
         console.print("[red]Error: Uvicorn not installed. Run: pip install uvicorn[/red]")
 
 
+# ============== Lead Scraping Commands (NEW) ==============
+
+@cli.group()
+def leads():
+    """🎯 Lead generation - scrape businesses with contact info."""
+    pass
+
+
+@leads.command("scrape")
+@click.argument("query")
+@click.option("--max", "-n", "max_results", default=20, help="Maximum leads to find")
+@click.option("--output", "-o", type=click.Path(), help="Save to JSON file")
+@click.option("--json", "-j", "json_output", is_flag=True, help="Output as JSON")
+def scrape_leads_cmd(query: str, max_results: int, output: str, json_output: bool):
+    """
+    Scrape leads for any query with emails, phones, addresses.
+    
+    Examples:
+    
+        soi leads scrape "dentists in Miami"
+        
+        soi leads scrape "coffee shops Austin" -n 50 -o leads.json
+        
+        soi leads scrape "plumbers Los Angeles" --json
+    """
+    from src.tools.lead_scraper import LeadScraper
+    import json
+    
+    async def run():
+        scraper = LeadScraper()
+        
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task(f"Searching: {query}...", total=None)
+            result = await scraper.search_leads(query, max_results=max_results)
+            progress.update(task, completed=True)
+        
+        return result
+    
+    result = asyncio.run(run())
+    
+    # Stats
+    console.print(f"\n[green]✅ Found {len(result.leads)} leads with contact info[/green]")
+    console.print(f"[dim]Search: {result.search_time:.1f}s | Scrape: {result.scrape_time:.1f}s | Total URLs: {result.total_found}[/dim]\n")
+    
+    if json_output:
+        from src.tools.lead_scraper import LeadScraper
+        scraper = LeadScraper.__new__(LeadScraper)
+        scraper.leads_to_json = lambda r: [
+            {"name": l.name, "email": l.email, "phone": l.phone, "address": l.address, "website": l.website}
+            for l in r.leads
+        ]
+        console.print_json(data=scraper.leads_to_json(result))
+    else:
+        # Pretty table output
+        table = Table(show_header=True, header_style="bold magenta", title="🎯 Leads Found")
+        table.add_column("#", style="dim", width=3)
+        table.add_column("Name", style="cyan", max_width=30)
+        table.add_column("Email", style="green", max_width=28)
+        table.add_column("Phone", style="yellow", max_width=14)
+        table.add_column("URL", style="blue", max_width=35)
+        
+        for i, lead in enumerate(result.leads, 1):
+            table.add_row(
+                str(i),
+                lead.name[:30] if lead.name else "-",
+                lead.email or "-",
+                lead.phone or "-",
+                lead.website[:35] if lead.website else "-",
+            )
+        
+        console.print(table)
+    
+    # Save to file
+    if output:
+        leads_data = [
+            {
+                "name": lead.name,
+                "email": lead.email,
+                "phone": lead.phone,
+                "address": lead.address,
+                "website": lead.website,
+                "snippet": lead.snippet,
+            }
+            for lead in result.leads
+        ]
+        
+        with open(output, "w") as f:
+            json.dump({"query": query, "leads": leads_data}, f, indent=2)
+        
+        console.print(f"\n[green]💾 Saved to {output}[/green]")
+    
+    if result.errors:
+        console.print(f"\n[yellow]⚠️ Errors: {len(result.errors)}[/yellow]")
+
+
+@leads.command("linkedin")
+@click.argument("query")
+@click.option("--max", "-n", "max_results", default=50, help="Maximum profiles to find")
+@click.option("--output", "-o", type=click.Path(), help="Save to JSON file")
+def linkedin_leads_cmd(query: str, max_results: int, output: str):
+    """
+    🔗 Scrape LinkedIn profiles for a specific role/industry.
+    
+    Searches only LinkedIn profiles (site:linkedin.com/in) for targeted lead gen.
+    
+    Examples:
+    
+        soi leads linkedin "dentists Miami"
+        
+        soi leads linkedin "software engineers San Francisco" -n 100
+        
+        soi leads linkedin "marketing manager NYC" -o leads.json
+    """
+    from src.tools.lead_scraper import LeadScraper
+    from src.config import settings
+    import json
+    import httpx
+    import re
+    
+    async def search_linkedin(query: str, start: int = 0):
+        """Search LinkedIn profiles via Serper."""
+        url = "https://google.serper.dev/search"
+        
+        # Add site filter for LinkedIn profiles + gmail for emails
+        linkedin_query = f'site:linkedin.com/in {query} "gmail"'
+        
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    url,
+                    json={"q": linkedin_query, "num": 10, "start": start, "gl": "us", "hl": "en"},
+                    headers={"X-API-KEY": settings.serper_api_key, "Content-Type": "application/json"}
+                )
+                response.raise_for_status()
+                return response.json().get("organic", [])
+        except:
+            return []
+    
+    def extract_email(text: str):
+        """Extract Gmail from text."""
+        email_pattern = r'[\w\.-]+@gmail\.com'
+        matches = re.findall(email_pattern, text.lower())
+        return matches[0] if matches else ""
+    
+    async def run():
+        all_results = []
+        seen_urls = set()
+        
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task(f"🔗 Searching LinkedIn: {query}...", total=None)
+            
+            # Paginate to get requested number of profiles
+            # Use different start offsets to get more results
+            pages_needed = (max_results + 9) // 10
+            
+            for page in range(min(pages_needed, 10)):  # Max 10 pages = 100 results per query variant
+                results = await search_linkedin(query, page * 10)
+                for r in results:
+                    url = r.get("link", "")
+                    if url not in seen_urls:
+                        seen_urls.add(url)
+                        all_results.append(r)
+                
+                if len(all_results) >= max_results:
+                    break
+            
+            # If we still need more, try query variations
+            if len(all_results) < max_results:
+                variations = [
+                    f"{query} email",
+                    f"{query} contact",
+                    f'"{query}"',
+                ]
+                for variant in variations:
+                    if len(all_results) >= max_results:
+                        break
+                    for page in range(3):  # 3 pages per variant
+                        results = await search_linkedin(variant, page * 10)
+                        for r in results:
+                            url = r.get("link", "")
+                            if url not in seen_urls:
+                                seen_urls.add(url)
+                                all_results.append(r)
+                        if len(all_results) >= max_results:
+                            break
+            
+            progress.update(task, completed=True)
+        
+        return all_results[:max_results]
+    
+    import asyncio
+    results = asyncio.run(run())
+    
+    # Parse LinkedIn profiles
+    leads = []
+    for r in results:
+        url = r.get("link", "")
+        title = r.get("title", "")
+        snippet = r.get("snippet", "")
+        
+        # Extract name from title (format: "Name - Title | LinkedIn")
+        name = title.split(" - ")[0].strip() if " - " in title else title.split(" | ")[0].strip()
+        
+        # Extract Gmail from snippet
+        email = extract_email(snippet) or extract_email(title)
+        
+        # Try to extract role/company from title
+        role = ""
+        company = ""
+        if " - " in title:
+            parts = title.split(" - ")
+            if len(parts) >= 2:
+                role_company = parts[1].replace(" | LinkedIn", "").strip()
+                
+                # Check for "@ Company" pattern (e.g., "Software Engineer @ Google")
+                if " @ " in role_company:
+                    role, company = role_company.split(" @ ", 1)
+                    role = role.strip()
+                    company = company.strip()
+                # Check for "at Company" pattern
+                elif " at " in role_company.lower():
+                    idx = role_company.lower().find(" at ")
+                    role = role_company[:idx].strip()
+                    company = role_company[idx+4:].strip()
+                else:
+                    role = role_company
+        
+        leads.append({
+            "name": name,
+            "email": email,
+            "role": role,
+            "company": company,
+            "linkedin_url": url,
+        })
+    
+    # Stats
+    emails_found = len([l for l in leads if l["email"]])
+    console.print(f"\n[green]✅ Found {len(leads)} LinkedIn profiles ({emails_found} with Gmail)[/green]\n")
+    
+    # Pretty table output
+    table = Table(show_header=True, header_style="bold magenta", title="🔗 LinkedIn Leads")
+    table.add_column("#", style="dim", width=3)
+    table.add_column("Name", style="cyan", max_width=22)
+    table.add_column("Email", style="green", max_width=25)
+    table.add_column("Role", style="yellow", max_width=22)
+    table.add_column("Company", style="white", max_width=15)
+    table.add_column("LinkedIn URL", style="blue", max_width=35)
+    
+    for i, lead in enumerate(leads, 1):
+        table.add_row(
+            str(i),
+            lead["name"][:22] if lead["name"] else "-",
+            lead["email"] or "-",
+            lead["role"][:22] if lead["role"] else "-",
+            lead["company"][:15] if lead["company"] else "-",
+            lead["linkedin_url"][:35] if lead["linkedin_url"] else "-",
+        )
+    
+    console.print(table)
+    
+    # Save to file
+    if output:
+        with open(output, "w") as f:
+            json.dump({"query": query, "total": len(leads), "emails_found": emails_found, "linkedin_leads": leads}, f, indent=2)
+        console.print(f"\n[green]💾 Saved to {output}[/green]")
+
+
+@leads.command("smart")
+@click.argument("query")
+@click.option("--max", "-n", "max_leads", default=50, help="Maximum leads to find")
+@click.option("--queries", "-q", "num_queries", default=5, help="Number of LLM-generated search queries")
+@click.option("--output", "-o", type=click.Path(), help="Save to JSON file")
+def smart_leads_cmd(query: str, max_leads: int, num_queries: int, output: str):
+    """
+    🧠 AI-powered lead search using Groq LLM for intelligent queries.
+    
+    Uses LLM to generate diverse search queries that find more leads
+    with email addresses and phone numbers.
+    
+    Examples:
+    
+        soi leads smart "dentists in Miami" -n 100
+        
+        soi leads smart "lawyers Los Angeles" -q 10 -o leads.json
+    """
+    from src.tools.intelligent_scraper import IntelligentLeadScraper
+    import json
+    
+    async def run():
+        scraper = IntelligentLeadScraper()
+        
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task(f"🧠 AI searching: {query}...", total=None)
+            result = await scraper.search(query, max_leads=max_leads, num_search_queries=num_queries)
+            progress.update(task, completed=True)
+        
+        return result
+    
+    result = asyncio.run(run())
+    
+    # Stats (no query display - cleaner output)
+    console.print(f"\n[green]✅ Found {len(result.leads)} leads with contact info[/green]")
+    console.print(f"[dim]LLM: {result.llm_time:.1f}s | Search: {result.search_time:.1f}s | Scrape: {result.scrape_time:.1f}s | URLs: {result.total_urls_found} | Queries: {len(result.queries_generated)}[/dim]\n")
+    
+    # Pretty table output
+    table = Table(show_header=True, header_style="bold magenta", title="🎯 Leads Found (AI-Powered)")
+    table.add_column("#", style="dim", width=3)
+    table.add_column("Name", style="cyan", max_width=30)
+    table.add_column("Email", style="green", max_width=28)
+    table.add_column("Phone", style="yellow", max_width=14)
+    table.add_column("URL", style="blue", max_width=35)
+    
+    for i, lead in enumerate(result.leads, 1):
+        table.add_row(
+            str(i),
+            lead.name[:30] if lead.name else "-",
+            lead.email or "-",
+            lead.phone or "-",
+            lead.website[:35] if lead.website else "-",
+        )
+    
+    console.print(table)
+    
+    # Save to file
+    if output:
+        leads_data = [
+            {
+                "name": lead.name,
+                "email": lead.email,
+                "phone": lead.phone,
+                "address": lead.address,
+                "website": lead.website,
+            }
+            for lead in result.leads
+        ]
+        
+        with open(output, "w") as f:
+            json.dump({
+                "query": query,
+                "queries_used": result.queries_generated,
+                "leads": leads_data
+            }, f, indent=2)
+        
+        console.print(f"\n[green]💾 Saved to {output}[/green]")
+    
+    if result.errors:
+        console.print(f"\n[yellow]⚠️ Errors: {len(result.errors)}[/yellow]")
+
+
 if __name__ == "__main__":
     cli()
+
+
