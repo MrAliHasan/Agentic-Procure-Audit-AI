@@ -55,10 +55,15 @@ class VendorGrader:
         """
         
         if web_research:
+            # Handle both dict and list types
+            if isinstance(web_research, dict):
+                research_data = list(web_research.values())[:5] if web_research else []
+            else:
+                research_data = web_research[:5]
             context += f"""
         
         Web Research:
-        {json.dumps(web_research[:5], indent=2, default=str)}
+        {json.dumps(research_data, indent=2, default=str)}
         """
         
         prompt = f"""

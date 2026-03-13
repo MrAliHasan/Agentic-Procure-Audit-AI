@@ -167,7 +167,7 @@ def grade(vendor_name: str, web: bool, criteria: tuple):
                 try:
                     search_tool = TavilySearchTool()
                     research = await search_tool.search_vendor_info(vendor_name)
-                    web_research = research.get("results", {})
+                    web_research = research.get("results", [])
                 except Exception as e:
                     console.print(f"[yellow]Web research failed: {e}[/yellow]")
         

@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
     openai_model: str = Field(default="gpt-4o-mini", alias="OPENAI_MODEL")
     
+    # OpenRouter LLM (cloud fallback when Ollama is unavailable)
+    openrouter_api_key: str = Field(default="", alias="OPENROUTER_API_KEY")
+    openrouter_model: str = Field(default="deepseek/deepseek-r1", alias="OPENROUTER_MODEL")
+    
     # ChromaDB Vector Store
     chroma_persist_dir: str = Field(default="./data/chroma_db", alias="CHROMA_PERSIST_DIR")
     chroma_collection_name: str = Field(default="vendor_intelligence", alias="CHROMA_COLLECTION_NAME")
