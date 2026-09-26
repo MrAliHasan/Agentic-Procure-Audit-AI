@@ -184,7 +184,7 @@ section[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] svg { f
 .kpi { border-top: 1px solid var(--ink); padding: 14px 0 4px; }
 .kpi .label { font-family: var(--mono); color: var(--muted); font-size: 0.68rem; text-transform: uppercase; letter-spacing: .12em; }
 .kpi .value { font-size: 2.3rem; font-weight: 500; letter-spacing: -0.03em; margin-top: 10px; line-height: 1;
-  font-variant-numeric: tabular-nums; color: var(--ink); }
+  font-variant-numeric: tabular-nums; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .kpi .sub { color: var(--muted); font-size: 0.82rem; margin-top: 8px; }
 
 .feature { border-top: 1px solid var(--line-strong); padding: 18px 0 6px; }

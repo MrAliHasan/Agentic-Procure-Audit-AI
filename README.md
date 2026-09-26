@@ -64,6 +64,36 @@ Your Query → AI Agent → Structured Analysis + Recommendations
 
 ---
 
+## 🖥️ Dashboard
+
+A web dashboard (`soi ui`) for every feature, including a live view of the agent's decisions as it runs.
+
+![Overview](docs/screenshots/01-overview.png)
+
+### Agent Analysis — watch the agent decide
+The pipeline streams node by node. Here the grader judged the local bid document sufficient, so the agent **skipped web search** and went straight to scoring and bid extraction.
+
+![Agent Analysis](docs/screenshots/02-agent-analysis.png)
+
+| Vendor Grading | Company Intelligence |
+|---|---|
+| ![Vendor Grading](docs/screenshots/03-vendor-grading.png) | ![Company Intelligence](docs/screenshots/04-company-intelligence.png) |
+| Weighted, explainable scores for price, quality, reliability and risk | Executive brief, financials, SWOT, risks and competitors |
+
+| Document Intelligence | Market Research |
+|---|---|
+| ![Document Intelligence](docs/screenshots/05-document-intelligence.png) | ![Market Research](docs/screenshots/06-market-research.png) |
+| Native PDFs, scanned PDFs and photos into structured fields | Live vendor, market and risk research with cited sources |
+
+| Knowledge Base | System |
+|---|---|
+| ![Knowledge Base](docs/screenshots/07-knowledge-base.png) | ![System](docs/screenshots/08-system.png) |
+| Semantic vendor search by meaning, not keywords | Engine health, integrations and scoring weights |
+
+> Screenshots show sample data.
+
+---
+
 ## 🚀 Features
 
 ### 📄 Document Intelligence
