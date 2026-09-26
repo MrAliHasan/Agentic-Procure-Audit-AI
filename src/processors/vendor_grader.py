@@ -5,9 +5,12 @@ import json
 from typing import Optional
 
 from src.llm.ollama_client import OllamaClient
+from src.llm.json_utils import extract_json
 from src.llm.prompts import GRADING_PROMPT
 from src.models.analysis import VendorAnalysis, ScoreDetail
 from src.config import settings
+
+PARSE_FAILED_MESSAGE = "The model returned a response that could not be parsed; scores are placeholders."
 
 
 class VendorGrader:
@@ -99,11 +102,17 @@ class VendorGrader:
         llm = OllamaClient()
         
         try:
-            response = await llm.generate(prompt, system=GRADING_PROMPT, temperature=0.2)
+            # Reasoning models spend tokens thinking before they answer, so give
+            # them room, and retry once if the reply still isn't valid JSON.
+            result = None
+            for _ in range(2):
+                response = await llm.generate(
+                    prompt, system=GRADING_PROMPT, temperature=0.2, max_tokens=6000
+                )
+                result = self._parse_grading_response(response, criteria)
+                if not result.get("parse_failed"):
+                    break
             await llm.close()
-            
-            # Parse response
-            result = self._parse_grading_response(response, criteria)
             
             # Build VendorAnalysis
             analysis = VendorAnalysis(
@@ -119,7 +128,10 @@ class VendorGrader:
                     )
                     for k, v in result.get("breakdown", {}).items()
                 },
-                reasoning_chain=result.get("key_findings", []),
+                reasoning_chain=(
+                    [PARSE_FAILED_MESSAGE] if result.get("parse_failed")
+                    else result.get("key_findings", [])
+                ),
                 confidence=result.get("confidence", 0.7),
                 criteria_used=criteria,
                 web_research_used=bool(web_research)
@@ -142,20 +154,20 @@ class VendorGrader:
     
     def _parse_grading_response(self, response: str, criteria: list[str]) -> dict:
         """Parse LLM response to extract grading data."""
-        # Try to extract JSON
-        if "{" in response and "}" in response:
-            try:
-                json_str = response[response.find("{"):response.rfind("}")+1]
-                return json.loads(json_str)
-            except json.JSONDecodeError:
-                pass
+        result = extract_json(response)
+        if result and ("overall_score" in result or result.get("breakdown")):
+            return result
         
-        # Fallback: return default structure
+        # Fallback: neutral scores, clearly flagged so callers can tell the user
         return {
-            "breakdown": {c: {"score": 50, "reasoning": "Unable to parse"} for c in criteria},
+            "parse_failed": True,
+            "breakdown": {
+                c: {"score": 50, "reasoning": "Not scored: the model's reply could not be read."}
+                for c in criteria
+            },
             "overall_score": 50,
             "recommendation": "REVIEW",
-            "confidence": 0.3
+            "confidence": 0.0
         }
     
     async def compare(

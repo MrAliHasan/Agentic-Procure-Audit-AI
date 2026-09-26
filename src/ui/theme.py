@@ -271,9 +271,13 @@ section[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] svg { f
 .brand .t2 { font-family: var(--mono); font-size: 0.64rem; letter-spacing: .14em; text-transform: uppercase; color: #8a857a !important; margin-top: 8px; }
 .side-label { font-family: var(--mono); font-size: 0.64rem; letter-spacing: .14em; text-transform: uppercase;
   color: #8a857a !important; margin: 28px 0 8px; padding: 0 2px; }
-.side-stat { display: flex; justify-content: space-between; font-size: 0.84rem; padding: 7px 2px; color: #a8a398;
+.side-stat { display: flex; justify-content: space-between; font-size: 0.9rem; padding: 9px 2px; color: var(--muted);
+  border-bottom: 1px solid var(--line); }
+.side-stat:last-child { border-bottom: none; }
+.side-stat b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+section[data-testid="stSidebar"] .side-stat { font-size: 0.84rem; padding: 7px 2px; color: #a8a398;
   border-bottom: 1px solid rgba(255,255,255,0.06); }
-.side-stat b { color: #fff !important; font-weight: 500; font-variant-numeric: tabular-nums; }
+section[data-testid="stSidebar"] .side-stat b { color: #fff !important; font-weight: 500; }
 .status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 8px; }
 
 @media (max-width: 900px) {

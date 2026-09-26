@@ -400,6 +400,10 @@ def page_grading():
 
         if st.session_state.get("grade_result"):
             analysis, report = st.session_state.grade_result
+            from src.processors.vendor_grader import PARSE_FAILED_MESSAGE
+            if PARSE_FAILED_MESSAGE in analysis.reasoning_chain:
+                st.warning("The model's reply couldn't be read, even after a retry, so these scores are "
+                           "placeholders. Run the grading again, or switch to a larger model.")
             left, right = st.columns([1.05, 1.95], gap="large")
             with left:
                 ui.render(ui.score_summary(analysis.overall_score, analysis.recommendation,

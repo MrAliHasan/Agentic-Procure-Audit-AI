@@ -2,6 +2,7 @@
 Vendor Scout Agent - Specialized for vendor research and analysis
 """
 import json
+from src.llm.json_utils import loads_llm_json
 from typing import Optional
 
 from src.agents.base import BaseAgent
@@ -119,9 +120,7 @@ class VendorScoutAgent(BaseAgent):
         # Parse response
         try:
             if "{" in response and "}" in response:
-                analysis = json.loads(
-                    response[response.find("{"):response.rfind("}")+1]
-                )
+                analysis = loads_llm_json(response)
             else:
                 analysis = {"raw_analysis": response}
         except json.JSONDecodeError:
@@ -193,9 +192,7 @@ class VendorScoutAgent(BaseAgent):
         
         try:
             if "{" in response and "}" in response:
-                result = json.loads(
-                    response[response.find("{"):response.rfind("}")+1]
-                )
+                result = loads_llm_json(response)
             else:
                 result = {"vendors": []}
         except json.JSONDecodeError:
@@ -253,9 +250,7 @@ class VendorScoutAgent(BaseAgent):
         
         try:
             if "{" in response and "}" in response:
-                comparison = json.loads(
-                    response[response.find("{"):response.rfind("}")+1]
-                )
+                comparison = loads_llm_json(response)
             else:
                 comparison = {"raw_comparison": response}
         except json.JSONDecodeError:

@@ -3,6 +3,7 @@ Order Intelligence Graph - Main LangGraph workflow
 Implements the Retrieve-Grade-Search-Generate loop
 """
 import json
+from src.llm.json_utils import loads_llm_json
 from typing import Literal
 
 from langgraph.graph import StateGraph, START, END
@@ -113,8 +114,8 @@ async def grade_node(state: OrderIntelligenceState) -> dict:
         # Parse response
         # Try to extract JSON from response
         if "{" in response and "}" in response:
-            json_str = response[response.find("{"):response.rfind("}")+1]
-            result = json.loads(json_str)
+            json_str = response
+            result = loads_llm_json(json_str)
             score = result.get("score", 0.5)
             decision = result.get("decision", "needs_search")
         else:
@@ -432,9 +433,9 @@ async def generate_node(state: OrderIntelligenceState) -> dict:
         # Try to parse as JSON
         analysis = {}
         if "{" in response and "}" in response:
-            json_str = response[response.find("{"):response.rfind("}")+1]
+            json_str = response
             try:
-                analysis = json.loads(json_str)
+                analysis = loads_llm_json(json_str)
             except json.JSONDecodeError:
                 analysis = {"raw_response": response}
         else:

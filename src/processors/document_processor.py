@@ -2,6 +2,7 @@
 Document Processor - Ingestion pipeline for invoices, contracts, bids
 """
 import json
+from src.llm.json_utils import loads_llm_json
 import time
 from pathlib import Path
 from typing import Optional
@@ -187,8 +188,8 @@ class DocumentProcessor:
             
             # Parse JSON from response
             if "{" in response and "}" in response:
-                json_str = response[response.find("{"):response.rfind("}")+1]
-                return json.loads(json_str)
+                json_str = response
+                return loads_llm_json(json_str)
             
             return {}
             

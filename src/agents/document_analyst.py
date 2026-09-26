@@ -2,6 +2,7 @@
 Document Analyst Agent - Specialized for document understanding
 """
 import json
+from src.llm.json_utils import loads_llm_json
 from typing import Optional
 from pathlib import Path
 
@@ -140,9 +141,7 @@ class DocumentAnalystAgent(BaseAgent):
         
         try:
             if "{" in response and "}" in response:
-                extracted = json.loads(
-                    response[response.find("{"):response.rfind("}")+1]
-                )
+                extracted = loads_llm_json(response)
             else:
                 extracted = {}
         except json.JSONDecodeError:
@@ -199,9 +198,7 @@ class DocumentAnalystAgent(BaseAgent):
         
         try:
             if "{" in response and "}" in response:
-                comparison = json.loads(
-                    response[response.find("{"):response.rfind("}")+1]
-                )
+                comparison = loads_llm_json(response)
             else:
                 comparison = {"raw_comparison": response}
         except json.JSONDecodeError:
@@ -259,9 +256,7 @@ class DocumentAnalystAgent(BaseAgent):
         
         try:
             if "{" in response and "}" in response:
-                summary = json.loads(
-                    response[response.find("{"):response.rfind("}")+1]
-                )
+                summary = loads_llm_json(response)
             else:
                 summary = {"summary": response}
         except json.JSONDecodeError:
