@@ -47,6 +47,7 @@ data/reports/
 !data/chroma_db/.gitkeep
 !data/downloads/.gitkeep
 !data/reports/.gitkeep
+youtube_video_script.md
 
 # Logs
 *.log
