@@ -126,7 +126,7 @@ class LeadScraper:
                     if "places" in data:
                         results.extend(data.get("places", []))
                     return results
-                except:
+                except Exception:
                     return []
             
             # Fetch pages in parallel
@@ -221,7 +221,7 @@ class LeadScraper:
         try:
             domain = urlparse(url).netloc.replace("www.", "")
             return any(skip in domain for skip in self.SKIP_DOMAINS)
-        except:
+        except Exception:
             return True
     
     async def _process_result(self, result: Dict) -> Optional[Lead]:
@@ -317,7 +317,7 @@ class LeadScraper:
                 try:
                     places = await self._search_serper(query, num_results=min(20, max_results), search_type="places")
                     all_search_results.extend(places)
-                except:
+                except Exception:
                     pass
             
             result.total_found = len(all_search_results)

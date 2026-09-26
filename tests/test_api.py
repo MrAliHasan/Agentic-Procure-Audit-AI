@@ -27,7 +27,8 @@ class TestAPIEndpoints:
             
             from src.api.server import app
             
-            yield TestClient(app)
+            with patch('src.api.server.settings.api_key', ''):
+                yield TestClient(app)
     
     def test_root_endpoint(self, client):
         """Test root endpoint returns API info."""
@@ -94,3 +95,51 @@ class TestAPIEndpoints:
         data = response.json()
         assert "knowledge_base" in data
         assert "config" in data
+
+
+class TestAPISecurity:
+    """API key and upload validation."""
+    
+    @pytest.fixture
+    def client(self):
+        with patch('src.api.server.OllamaClient') as mock_ollama, \
+             patch('src.api.server.get_vector_store') as mock_store, \
+             patch('src.api.server.settings.api_key', 'test-secret'), \
+             patch('src.api.server.settings.max_upload_mb', 1):
+            mock_ollama.return_value.health_check = AsyncMock(return_value=True)
+            mock_ollama.return_value.close = AsyncMock()
+            mock_store.return_value.get_stats = AsyncMock(return_value={})
+            mock_store.return_value.similarity_search = AsyncMock(return_value=[])
+            
+            from src.api.server import app
+            
+            yield TestClient(app)
+    
+    def test_public_routes_need_no_key(self, client):
+        assert client.get("/").status_code == 200
+        assert client.get("/health").status_code == 200
+    
+    def test_missing_key_rejected(self, client):
+        assert client.get("/stats").status_code == 401
+    
+    def test_wrong_key_rejected(self, client):
+        assert client.get("/stats", headers={"X-API-Key": "nope"}).status_code == 401
+    
+    def test_valid_key_accepted(self, client):
+        assert client.get("/stats", headers={"X-API-Key": "test-secret"}).status_code == 200
+    
+    def test_rejects_unsupported_file_type(self, client):
+        response = client.post(
+            "/documents/process",
+            headers={"X-API-Key": "test-secret"},
+            files={"file": ("payload.exe", b"MZ", "application/octet-stream")},
+        )
+        assert response.status_code == 415
+    
+    def test_rejects_oversized_upload(self, client):
+        response = client.post(
+            "/documents/process",
+            headers={"X-API-Key": "test-secret"},
+            files={"file": ("big.pdf", b"0" * (1024 * 1024 + 1), "application/pdf")},
+        )
+        assert response.status_code == 413

@@ -1,4 +1,4 @@
-# Sovereign Order Intelligence - Complete Documentation
+# Agentic Procure-Audit AI - Complete Documentation
 
 > **AI-Powered Supply Chain & Vendor Management**
 > 100% Python • Local LLM Deployment • Zero Cloud Dependency
@@ -28,7 +28,7 @@
 
 ## Overview
 
-Sovereign Order Intelligence (SOI) is a production-ready supply chain AI platform that provides:
+Agentic Procure-Audit AI (SOI) is a production-ready supply chain AI platform that provides:
 
 - **🔒 AI Sovereignty**: All data stays local, GDPR compliant by design
 - **🧠 Agentic RAG**: Retrieve → Grade → Search → Generate workflow
@@ -254,7 +254,7 @@ ollama pull qwen2.5:7b
 ### Step 3: Install SOI
 
 ```bash
-cd sovereign-order-intelligence
+cd Agentic-Procure-Audit-AI
 
 # Create virtual environment
 python -m venv venv

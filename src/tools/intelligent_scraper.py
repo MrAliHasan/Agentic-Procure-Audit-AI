@@ -237,7 +237,7 @@ Return ONLY a JSON array:
                     )
                     response.raise_for_status()
                     return response.json().get("organic", [])
-                except:
+                except Exception:
                     return []
             
             # Fetch pages in parallel
@@ -262,7 +262,7 @@ Return ONLY a JSON array:
                 )
                 response.raise_for_status()
                 return response.json().get("places", [])
-        except:
+        except Exception:
             return []
     
     async def _fetch_url(self, url: str) -> Optional[Dict]:
@@ -284,7 +284,7 @@ Return ONLY a JSON array:
                     "text": soup.get_text(separator=' ', strip=True)[:15000],
                     "title": soup.title.string if soup.title else "",
                 }
-        except:
+        except Exception:
             return None
     
     def _clean_email(self, email: str) -> str:
@@ -323,7 +323,7 @@ Return ONLY a JSON array:
         try:
             domain = urlparse(url).netloc.replace("www.", "")
             return any(skip in domain for skip in self.SKIP_DOMAINS)
-        except:
+        except Exception:
             return True
     
     async def _process_result(self, result: Dict) -> Optional[Lead]:
@@ -505,7 +505,7 @@ Return ONLY a JSON array: ["query1", "query2", ...]"""
             
             if isinstance(queries, list):
                 return [q for q in queries if q not in existing_queries][:num]
-        except:
+        except Exception:
             pass
         
         return []

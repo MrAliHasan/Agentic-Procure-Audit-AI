@@ -1,4 +1,4 @@
-# Sovereign Order Intelligence - API Documentation
+# Agentic Procure-Audit AI - API Documentation
 
 > OpenAPI-compatible REST API for supply chain AI
 
@@ -27,7 +27,7 @@ Root endpoint with API info.
 **Response** `200 OK`
 ```json
 {
-  "name": "Sovereign Order Intelligence",
+  "name": "Agentic Procure-Audit AI",
   "version": "1.0.0",
   "status": "running",
   "endpoints": {

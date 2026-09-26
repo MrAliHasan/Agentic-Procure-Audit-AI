@@ -91,3 +91,30 @@ class TestOrderIntelligenceGraph:
         # Test max iterations reached
         state = {"grade_decision": "needs_search", "iteration": 3, "max_iterations": 3}
         assert decide_to_search(state) == "generate"
+
+    
+    def test_always_web_search_forces_first_pass(self):
+        """ALWAYS_WEB_SEARCH searches once even when local data is sufficient."""
+        from src.graphs.order_intelligence import decide_to_search
+        
+        with patch('src.graphs.order_intelligence.settings.always_web_search', True):
+            state = {"grade_decision": "sufficient", "iteration": 0, "max_iterations": 3}
+            assert decide_to_search(state) == "search"
+            
+            state = {"grade_decision": "sufficient", "iteration": 1, "max_iterations": 3}
+            assert decide_to_search(state) == "generate"
+    
+    @pytest.mark.asyncio
+    async def test_retrieve_node_filters_low_relevance(self):
+        """Records below the similarity threshold are dropped."""
+        from src.graphs.order_intelligence import retrieve_node
+        
+        with patch('src.graphs.order_intelligence.get_vector_store') as mock_store:
+            mock_store.return_value.similarity_search = AsyncMock(return_value=[
+                {"id": "v_low", "text": "Unrelated", "score": 0.1}
+            ])
+            
+            result = await retrieve_node({"query": "test query"})
+            
+            assert result["vendors"] == []
+            assert result["documents"] == []

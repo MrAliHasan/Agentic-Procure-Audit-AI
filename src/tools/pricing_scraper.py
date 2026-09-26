@@ -157,7 +157,7 @@ class PricingScraperTool:
                                     for offer in offers:
                                         if "price" in offer:
                                             prices.append(float(offer["price"]))
-                    except:
+                    except Exception:
                         continue
                 
                 # Get product name

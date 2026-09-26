@@ -247,7 +247,7 @@ class CompanyResearcher:
             response.raise_for_status()
             results = response.json().get("organic", [])
             return results
-        except:
+        except Exception:
             return []
     
     async def _llm_call(self, prompt: str, max_tokens: int = 2000) -> str:
@@ -582,7 +582,7 @@ Do NOT include "{company_name}" in the list."""
             try:
                 competitors = json.loads(match.group())
                 return [c for c in competitors if c.lower() != company_name.lower()][:10]
-            except:
+            except Exception:
                 pass
         return []
     

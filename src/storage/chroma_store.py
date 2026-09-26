@@ -282,9 +282,12 @@ class VectorStore:
         client = self._get_client()
         collections = client.list_collections()
         
+        # Report under the logical names used everywhere else ("vendors", "documents")
+        logical_names = {real: logical for logical, real in self.COLLECTIONS.items()}
+        
         stats = {}
         for coll in collections:
-            stats[coll.name] = {
+            stats[logical_names.get(coll.name, coll.name)] = {
                 "count": coll.count()
             }
         

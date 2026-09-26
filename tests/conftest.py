@@ -1,5 +1,5 @@
 """
-Test Suite for Sovereign Order Intelligence
+Test Suite for Agentic Procure-Audit AI
 """
 import pytest
 import asyncio

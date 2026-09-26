@@ -1,5 +1,5 @@
 # ============================================
-# Sovereign Order Intelligence - Dependencies
+# Agentic Procure-Audit AI - Dependencies
 # ============================================
 # Python 3.11+ required
 # Optimized for CPU with 16GB RAM

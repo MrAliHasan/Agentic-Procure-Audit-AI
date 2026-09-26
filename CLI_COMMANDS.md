@@ -1,4 +1,4 @@
-# 🏭 Sovereign Order Intelligence - CLI Commands
+# 🏭 Agentic Procure-Audit AI - CLI Commands
 
 Complete reference for all SOI command-line interface commands.
 

@@ -1,5 +1,5 @@
 """
-Command Line Interface for Sovereign Order Intelligence
+Command Line Interface for Agentic Procure-Audit AI
 """
 import asyncio
 import click
@@ -15,7 +15,7 @@ console = Console()
 @click.group()
 @click.version_option(version="1.0.0")
 def cli():
-    """🏭 Sovereign Order Intelligence - AI-Powered Supply Chain Management"""
+    """🏭 Agentic Procure-Audit AI - AI-Powered Supply Chain Management"""
     pass
 
 
@@ -751,25 +751,6 @@ def research_company_cmd(company_name: str, output: str, markdown: str):
         console.print(f"[green]📄 Markdown report saved to {markdown}[/green]")
 
 
-# ============== Server Commands ==============
-
-@cli.command()
-@click.option("--host", "-h", default="0.0.0.0", help="Host to bind")
-@click.option("--port", "-p", default=8000, help="Port to bind")
-@click.option("--reload", is_flag=True, help="Enable auto-reload")
-def serve(host: str, port: int, reload: bool):
-    """Start the API server."""
-    import uvicorn
-    
-    console.print(f"[green]Starting Sovereign Order Intelligence API on {host}:{port}[/green]")
-    uvicorn.run(
-        "src.api.server:app",
-        host=host,
-        port=port,
-        reload=reload
-    )
-
-
 # ============== Status Commands ==============
 
 @cli.command()
@@ -1020,7 +1001,7 @@ def linkedin_leads_cmd(query: str, max_results: int, output: str):
                 )
                 response.raise_for_status()
                 return response.json().get("organic", [])
-        except:
+        except Exception:
             return []
     
     def extract_email(text: str):

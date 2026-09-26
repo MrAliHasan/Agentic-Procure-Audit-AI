@@ -1,10 +1,13 @@
 """
-FastAPI Server - RESTful API for Sovereign Order Intelligence
+FastAPI Server - RESTful API for Agentic Procure-Audit AI
 """
+import secrets
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Optional
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import Depends, FastAPI, HTTPException, Request, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import APIKeyHeader
 from pydantic import BaseModel
 
 from src.config import settings, get_settings
@@ -46,20 +49,35 @@ async def lifespan(app: FastAPI):
 
 # ============== App ==============
 
+PUBLIC_PATHS = {"/", "/health"}
+ALLOWED_UPLOAD_SUFFIXES = {".pdf", ".png", ".jpg", ".jpeg", ".tiff", ".tif", ".bmp", ".txt"}
+
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+
+async def verify_api_key(request: Request, api_key: Optional[str] = Depends(api_key_header)):
+    """Require X-API-Key on every non-public route when API_KEY is configured."""
+    if not settings.api_key or request.url.path in PUBLIC_PATHS:
+        return
+    if not api_key or not secrets.compare_digest(api_key, settings.api_key):
+        raise HTTPException(status_code=401, detail="Invalid or missing X-API-Key header")
+
+
 app = FastAPI(
-    title="Sovereign Order Intelligence API",
-    description="AI-powered supply chain and vendor management - 100% local",
+    title="Agentic Procure-Audit AI API",
+    description="AI-powered procurement intelligence: vendor grading, bid extraction and market research",
     version=settings.app_version,
-    lifespan=lifespan
+    lifespan=lifespan,
+    dependencies=[Depends(verify_api_key)],
 )
 
-# CORS
+# CORS - only the origins listed in CORS_ORIGINS may call the API from a browser
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=[o.strip() for o in settings.cors_origins.split(",") if o.strip()],
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "X-API-Key"],
 )
 
 
@@ -271,11 +289,18 @@ async def process_document(
     Extracts structured data using OCR and LLM.
     """
     import tempfile
-    from pathlib import Path
+    
+    suffix = Path(file.filename or "").suffix.lower()
+    if suffix not in ALLOWED_UPLOAD_SUFFIXES:
+        raise HTTPException(status_code=415, detail=f"Unsupported file type: {suffix or 'none'}")
+    
+    max_bytes = settings.max_upload_mb * 1024 * 1024
+    content = await file.read(max_bytes + 1)
+    if len(content) > max_bytes:
+        raise HTTPException(status_code=413, detail=f"File exceeds {settings.max_upload_mb} MB limit")
     
     # Save uploaded file
-    with tempfile.NamedTemporaryFile(delete=False, suffix=Path(file.filename).suffix) as tmp:
-        content = await file.read()
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         tmp.write(content)
         tmp_path = tmp.name
     

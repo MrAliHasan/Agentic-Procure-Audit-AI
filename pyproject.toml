@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "sovereign-order-intelligence"
+name = "agentic-procure-audit-ai"
 version = "1.0.0"
-description = "AI-Powered Supply Chain & Vendor Management - 100% Local LLM"
+description = "AI-powered procurement intelligence and bid analysis - local-first LLM agent"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
@@ -88,9 +88,9 @@ dev = [
 soi = "src.cli:cli"
 
 [project.urls]
-Homepage = "https://github.com/alihassan/sovereign-order-intelligence"
-Documentation = "https://github.com/alihassan/sovereign-order-intelligence#readme"
-Repository = "https://github.com/alihassan/sovereign-order-intelligence"
+Homepage = "https://github.com/MrAliHasan/Agentic-Procure-Audit-AI"
+Documentation = "https://github.com/MrAliHasan/Agentic-Procure-Audit-AI#readme"
+Repository = "https://github.com/MrAliHasan/Agentic-Procure-Audit-AI"
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -103,6 +103,8 @@ target-version = ["py311"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "N", "W"]
 ignore = ["E501"]
 

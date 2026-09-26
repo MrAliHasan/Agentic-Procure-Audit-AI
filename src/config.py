@@ -1,5 +1,5 @@
 """
-Sovereign Order Intelligence - Configuration
+Agentic Procure-Audit AI - Configuration
 Centralized configuration using Pydantic Settings
 """
 import os
@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
     
     # Application
-    app_name: str = "Sovereign Order Intelligence"
+    app_name: str = "Agentic Procure-Audit AI"
     app_version: str = "1.0.0"
     debug: bool = Field(default=False, alias="DEBUG")
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
@@ -51,6 +51,12 @@ class Settings(BaseSettings):
     confidence_threshold: float = Field(default=0.8, alias="CONFIDENCE_THRESHOLD")
     max_web_searches: int = Field(default=5, alias="MAX_WEB_SEARCHES")
     max_context_pages: int = Field(default=5, alias="MAX_CONTEXT_PAGES")  # Limit pages sent to LLM
+    always_web_search: bool = Field(default=False, alias="ALWAYS_WEB_SEARCH")  # Search even when local data suffices
+    
+    # API Security
+    api_key: str = Field(default="", alias="API_KEY")  # When set, requests must send X-API-Key
+    cors_origins: str = Field(default="http://localhost:8501,http://localhost:3000", alias="CORS_ORIGINS")
+    max_upload_mb: int = Field(default=20, alias="MAX_UPLOAD_MB")
     
     # Vendor Scoring Weights
     weight_price: float = Field(default=0.30, alias="WEIGHT_PRICE")

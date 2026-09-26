@@ -1,4 +1,4 @@
-# Contributing to Sovereign Order Intelligence
+# Contributing to Agentic Procure-Audit AI
 
 Thank you for your interest in contributing! This document provides guidelines and information for contributors.
 
@@ -15,8 +15,8 @@ Thank you for your interest in contributing! This document provides guidelines a
 
 ```bash
 # Clone the repository
-git clone https://github.com/alihassan/sovereign-order-intelligence.git
-cd sovereign-order-intelligence
+git clone https://github.com/MrAliHasan/Agentic-Procure-Audit-AI.git
+cd Agentic-Procure-Audit-AI
 
 # Create virtual environment
 python -m venv venv

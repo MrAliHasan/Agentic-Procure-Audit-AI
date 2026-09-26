@@ -21,6 +21,11 @@ from src.config import settings
 
 # ============== Node Functions ==============
 
+# Minimum cosine similarity for a stored record to count as relevant
+VENDOR_RELEVANCE_THRESHOLD = 0.5
+DOCUMENT_RELEVANCE_THRESHOLD = 0.4  # Lower threshold for internal docs
+
+
 async def retrieve_node(state: OrderIntelligenceState) -> dict:
     """
     Retrieve relevant data from vector store.
@@ -36,37 +41,6 @@ async def retrieve_node(state: OrderIntelligenceState) -> dict:
         collection="vendors"
     )
     
-    # RELEVANCE FILTER: Only include vendors that are actually relevant to the query
-    # Use embeddings to calculate relevance score
-    relevant_vendors = []
-    if vendors:
-        from src.llm.embeddings import get_embeddings
-        import math
-        
-        embeddings = get_embeddings()
-        query_embedding = embeddings.embed_query(query)
-        
-        for vendor in vendors:
-            # Get vendor description for embedding
-            vendor_text = f"{vendor.get('name', '')} {vendor.get('description', '')} {vendor.get('products', '')}"
-            vendor_embedding = embeddings.embed_query(vendor_text[:500])
-            
-            # Calculate cosine similarity
-            dot_product = sum(a * b for a, b in zip(query_embedding, vendor_embedding))
-            norm1 = math.sqrt(sum(a * a for a in query_embedding))
-            norm2 = math.sqrt(sum(b * b for b in vendor_embedding))
-            
-            if norm1 > 0 and norm2 > 0:
-                similarity = dot_product / (norm1 * norm2)
-            else:
-                similarity = 0.0
-            
-            # Only include if relevance > threshold
-            RELEVANCE_THRESHOLD = 0.5
-            if similarity >= RELEVANCE_THRESHOLD:
-                vendor["relevance_score"] = round(similarity, 3)
-                relevant_vendors.append(vendor)
-    
     # Search documents
     documents = await store.similarity_search(
         query=query,
@@ -74,31 +48,19 @@ async def retrieve_node(state: OrderIntelligenceState) -> dict:
         collection="documents"
     )
     
-    # Filter documents by relevance too
+    # RELEVANCE FILTER: the store uses cosine space, so "score" is already the
+    # cosine similarity between the query and each stored record.
+    relevant_vendors = []
+    for vendor in vendors:
+        if vendor.get("score", 0.0) >= VENDOR_RELEVANCE_THRESHOLD:
+            vendor["relevance_score"] = round(vendor["score"], 3)
+            relevant_vendors.append(vendor)
+    
     relevant_docs = []
-    if documents:
-        from src.llm.embeddings import get_embeddings
-        import math
-        
-        embeddings = get_embeddings()
-        query_embedding = embeddings.embed_query(query)
-        
-        for doc in documents:
-            # similarity_search returns: text, metadata (with file_name, type, etc.), score
-            doc_text = doc.get('text', '') or ''
-            file_name = doc.get('metadata', {}).get('file_name', '')
-            doc_embedding_text = f"{file_name} {doc_text[:500]}"
-            doc_embedding = embeddings.embed_query(doc_embedding_text[:500])
-            
-            dot_product = sum(a * b for a, b in zip(query_embedding, doc_embedding))
-            norm1 = math.sqrt(sum(a * a for a in query_embedding))
-            norm2 = math.sqrt(sum(b * b for b in doc_embedding))
-            
-            similarity = dot_product / (norm1 * norm2) if norm1 > 0 and norm2 > 0 else 0.0
-            
-            if similarity >= 0.4:  # Lower threshold for internal docs
-                doc["relevance_score"] = round(similarity, 3)
-                relevant_docs.append(doc)
+    for doc in documents:
+        if doc.get("score", 0.0) >= DOCUMENT_RELEVANCE_THRESHOLD:
+            doc["relevance_score"] = round(doc["score"], 3)
+            relevant_docs.append(doc)
     
     return {
         "vendors": relevant_vendors,
@@ -535,26 +497,21 @@ async def generate_node(state: OrderIntelligenceState) -> dict:
 
 def decide_to_search(state: OrderIntelligenceState) -> Literal["search", "generate"]:
     """
-    Conditional edge: decide whether to search or generate.
+    Conditional edge: decide whether to search the web or generate directly.
     
-    ALWAYS search for comprehensive analysis - web data adds value
-    even when local data is "sufficient".
+    Follows the grade node's decision. Set ALWAYS_WEB_SEARCH=true to force
+    one web research pass even when local data is sufficient.
     """
     iteration = state.get("iteration", 0)
     max_iterations = state.get("max_iterations", settings.max_web_searches)
     
-    # Always do at least one web search for comprehensive analysis
-    if iteration == 0:
-        return "search"
-    
-    # After first search, check if we need more
-    grade_decision = state.get("grade_decision", "needs_search")
-    
     if iteration >= max_iterations:
         return "generate"
     
-    # If grading says needs more search and we haven't exhausted iterations
-    if grade_decision == "needs_search":
+    if settings.always_web_search and iteration == 0:
+        return "search"
+    
+    if state.get("grade_decision", "needs_search") == "needs_search":
         return "search"
     
     return "generate"
@@ -568,8 +525,8 @@ def create_order_intelligence_graph():
     
     Implements the Retrieve-Grade-Search-Generate loop:
     1. RETRIEVE: Pull relevant data from vector store
-    2. GRADE: Assess relevance (threshold: 0.7)
-    3. SEARCH: If grade fails, search web via Tavily
+    2. GRADE: LLM scores relevance (RELEVANCE_THRESHOLD, default 0.7)
+    3. SEARCH: If the grade is insufficient, deep web research via Serper + Tavily
     4. GENERATE: Produce final analysis with reasoning chain
     
     Returns:
@@ -608,23 +565,9 @@ def create_order_intelligence_graph():
 
 # ============== High-level API ==============
 
-async def analyze_query(
-    query: str,
-    criteria: list[str] = None
-) -> dict:
-    """
-    High-level function to analyze a query using the Order Intelligence graph.
-    
-    Args:
-        query: The user's query
-        criteria: Optional list of criteria to evaluate
-        
-    Returns:
-        Analysis result dict
-    """
-    graph = create_order_intelligence_graph()
-    
-    initial_state = {
+def _initial_state(query: str, criteria: list[str] = None) -> dict:
+    """Build the starting state for the Order Intelligence graph."""
+    return {
         "query": query,
         "criteria": criteria or ["price", "quality", "reliability", "risk"],
         "vendors": [],
@@ -640,9 +583,10 @@ async def analyze_query(
         "max_iterations": settings.max_web_searches,
         "error": None
     }
-    
-    result = await graph.ainvoke(initial_state)
-    
+
+
+def _format_result(query: str, result: dict) -> dict:
+    """Shape the final graph state into the public analysis result."""
     return {
         "query": query,
         "analysis": result.get("analysis"),
@@ -657,3 +601,43 @@ async def analyze_query(
         "web_searches_performed": result.get("iteration", 0),
         "error": result.get("error")
     }
+
+
+async def analyze_query(
+    query: str,
+    criteria: list[str] = None
+) -> dict:
+    """
+    High-level function to analyze a query using the Order Intelligence graph.
+    
+    Args:
+        query: The user's query
+        criteria: Optional list of criteria to evaluate
+        
+    Returns:
+        Analysis result dict
+    """
+    graph = create_order_intelligence_graph()
+    result = await graph.ainvoke(_initial_state(query, criteria))
+    return _format_result(query, result)
+
+
+async def stream_analysis(query: str, criteria: list[str] = None):
+    """
+    Run the graph node by node.
+    
+    Yields ("node", node_name, update) after each node finishes, then
+    ("done", None, result) with the same shape analyze_query returns.
+    """
+    graph = create_order_intelligence_graph()
+    final_state = {}
+    async for mode, chunk in graph.astream(
+        _initial_state(query, criteria), stream_mode=["updates", "values"]
+    ):
+        if mode == "values":
+            final_state = chunk
+        else:
+            for node_name, update in chunk.items():
+                yield "node", node_name, update or {}
+    yield "done", None, _format_result(query, final_state)
+

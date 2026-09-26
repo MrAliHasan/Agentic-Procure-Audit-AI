@@ -11,14 +11,14 @@
 
 ## 🎯 The Problem
 
-> **$95 billion annually** is lost due to procurement and order management errors.
+> Procurement decisions are only as good as the documents, vendor data and market research behind them — and most of that work is still manual.
 
 Procurement teams face critical challenges:
 
 | Challenge | Impact |
 |-----------|--------|
 | **📊 Information Overload** | Vendors, pricing, invoices, bids scattered across PDFs, emails, websites |
-| **⏱️ Manual Analysis** | Teams spend 60%+ time on repetitive document review and vendor research |
+| **⏱️ Manual Analysis** | Analysts lose hours to repetitive document review and vendor research |
 | **🔒 Data Privacy Risks** | Sensitive contract data exposed when using cloud AI services |
 | **📉 Slow Decisions** | Days to analyze bids that should take minutes |
 | **🔍 Incomplete Research** | Missing market intelligence leads to overpaying vendors |
@@ -46,7 +46,7 @@ Your Query → AI Agent → Structured Analysis + Recommendations
 
 | Feature | Benefit |
 |---------|---------|
-| **🔐 100% Local AI** | Runs on Ollama - your sensitive data NEVER leaves your servers |
+| **🔐 Local-First AI** | Runs on Ollama so documents stay on your servers (optional OpenRouter fallback for prompts) |
 | **📄 Scanned Document OCR** | Extracts text from scanned PDFs & images that other tools can't read |
 | **🤖 Agentic Workflow** | Autonomously decides when to search web vs use local data |
 | **📊 Structured Extraction** | Automatically pulls vendor, price, dates into JSON format |
@@ -55,12 +55,12 @@ Your Query → AI Agent → Structured Analysis + Recommendations
 
 ### Key Benefits
 
-| Metric | Value |
-|--------|-------|
-| **Time Savings** | 80% reduction in vendor analysis time |
-| **Cost Reduction** | 15-30% savings through better vendor selection |
-| **Error Reduction** | 95% fewer data entry errors |
-| **Data Privacy** | 100% - nothing leaves your servers |
+| Goal | How |
+|------|-----|
+| **Faster vendor analysis** | One command replaces manual searching, reading and scoring |
+| **Better vendor selection** | Weighted, explainable scores backed by cited evidence |
+| **Fewer data-entry errors** | Prices, dates and terms extracted into structured JSON |
+| **Data privacy** | Vector store and local LLM run on your own machine |
 
 ---
 
@@ -418,7 +418,17 @@ SERPER_API_KEY=your-serper-key
 # Optional: Cloud LLM Fallback
 OPENROUTER_API_KEY=your-key
 OPENROUTER_MODEL=deepseek/deepseek-r1
+
+# Agent behaviour
+ALWAYS_WEB_SEARCH=false   # true = always add live web data, even when local data suffices
+
+# REST API security
+API_KEY=change-me          # when set, clients must send the X-API-Key header
+CORS_ORIGINS=http://localhost:8501
+MAX_UPLOAD_MB=20
 ```
+
+> **Note:** set `API_KEY` before exposing `soi serve` beyond localhost.
 
 ### Start Ollama
 

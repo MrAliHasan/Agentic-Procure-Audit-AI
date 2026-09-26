@@ -1,9 +1,25 @@
 # Changelog
 
-All notable changes to Sovereign Order Intelligence will be documented in this file.
+All notable changes to Agentic Procure-Audit AI will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+- Redesigned Streamlit UI (`src/ui/`): live LangGraph pipeline view, score rings, bid-variable cards, Company Intelligence page with SWOT grid, Knowledge Base page
+- `stream_analysis()` for node-by-node streaming of the analysis graph
+- REST API security: optional `API_KEY` (X-API-Key header), configurable `CORS_ORIGINS`, upload type and `MAX_UPLOAD_MB` limits
+- `ALWAYS_WEB_SEARCH` setting
+- GitHub Actions CI (ruff + pytest) and tests for API security and routing
+
+### Fixed
+- Routing now follows the grade node's decision (previously always searched on the first pass)
+- Retrieve node uses ChromaDB's cosine similarity instead of re-embedding every result (was also scoring vendors on empty text)
+- Vector store stats reported under logical names (`vendors`, `documents`)
+- Duplicate `serve` CLI command; bare `except:` clauses
+- Product naming unified as "Agentic Procure-Audit AI"
 
 ## [1.0.0] - 2025-02-06
 
