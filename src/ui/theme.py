@@ -234,7 +234,11 @@ section[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] svg { f
 .crit .nm { font-weight: 600; text-transform: capitalize; }
 .crit .sc { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 1.05rem; }
 .bar { height: 4px; border-radius: 99px; background: var(--line); margin: 10px 0; overflow: hidden; }
-.bar > span { display: block; height: 100%; border-radius: 99px; }
+.bar > span { display: block; height: 100%; border-radius: 99px; animation: grow 1.1s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes grow { from { width: 0; } }
+.ring-arc { animation: sweep 1.3s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes sweep { from { stroke-dashoffset: var(--circ); } }
+@media (prefers-reduced-motion: reduce) { .bar > span, .ring-arc { animation: none; } }
 .crit .why { color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
 
 /* ---------- Fields ---------- */
@@ -402,8 +406,9 @@ def score_ring(score: float, size: int = 148, label: str = "Overall") -> str:
     return f"""
     <svg width="{size}" height="{size}" viewBox="0 0 {size} {size}" role="img" aria-label="{esc(label)} score {score:.0f} of 100">
     <circle cx="{c}" cy="{c}" r="{r}" fill="none" stroke="#e2ddd2" stroke-width="{stroke}"/>
-    <circle cx="{c}" cy="{c}" r="{r}" fill="none" stroke="{color}" stroke-width="{stroke + 1}" stroke-linecap="round"
-    stroke-dasharray="{circ:.1f}" stroke-dashoffset="{offset:.1f}" transform="rotate(-90 {c} {c})"/>
+    <circle class="ring-arc" cx="{c}" cy="{c}" r="{r}" fill="none" stroke="{color}" stroke-width="{stroke + 1}"
+    stroke-linecap="round" stroke-dasharray="{circ:.1f}" stroke-dashoffset="{offset:.1f}"
+    style="--circ:{circ:.1f}" transform="rotate(-90 {c} {c})"/>
     <text x="50%" y="52%" text-anchor="middle" dominant-baseline="middle" fill="#141412"
     font-family="Instrument Serif, Georgia, serif" font-size="{size * 0.42:.0f}">{score:.0f}</text>
     <text x="50%" y="75%" text-anchor="middle" fill="#6f6b62" font-family="Geist Mono, monospace"

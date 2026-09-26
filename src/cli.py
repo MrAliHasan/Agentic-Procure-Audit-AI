@@ -785,22 +785,36 @@ def status():
     table.add_column("Status")
     table.add_column("Details")
     
+    if ollama_ok:
+        ollama_status = "[green]✓ OK[/green]"
+    elif settings.openrouter_api_key:
+        ollama_status = "[yellow]– Not running[/yellow]"
+    else:
+        ollama_status = "[red]✗ Error[/red]"
+    table.add_row("Ollama (local LLM)", ollama_status, f"Model: {settings.ollama_model}")
+    
     table.add_row(
-        "Ollama",
-        "[green]✓ OK[/green]" if ollama_ok else "[red]✗ Error[/red]",
-        f"Model: {settings.ollama_model}"
+        "OpenRouter (fallback)",
+        "[green]✓ Configured[/green]" if settings.openrouter_api_key else "[yellow]⚠ Not set[/yellow]",
+        f"Model: {settings.openrouter_model}" if settings.openrouter_api_key else "Set OPENROUTER_API_KEY"
     )
     
     table.add_row(
         "Vector Store",
         "[green]✓ OK[/green]" if vector_ok else "[red]✗ Error[/red]",
-        str(stats)
+        ", ".join(f"{name}: {data.get('count', 0)}" for name, data in stats.items()) or "Empty"
     )
     
     table.add_row(
         "Tavily API",
         "[green]✓ Configured[/green]" if settings.tavily_api_key else "[yellow]⚠ Not set[/yellow]",
         "Web search enabled" if settings.tavily_api_key else "Set TAVILY_API_KEY"
+    )
+    
+    table.add_row(
+        "Serper API",
+        "[green]✓ Configured[/green]" if settings.serper_api_key else "[yellow]⚠ Not set[/yellow]",
+        "Deep research & company intelligence" if settings.serper_api_key else "Set SERPER_API_KEY"
     )
     
     console.print(table)
