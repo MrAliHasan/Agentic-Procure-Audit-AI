@@ -1,9 +1,12 @@
 """
 Design system for the Streamlit UI: global CSS and small HTML components.
 
-Every component returns an HTML string that is rendered with
-st.markdown(..., unsafe_allow_html=True). Any text that may come from
-users, documents, the web or the LLM goes through `esc()` first.
+Direction: "audit ledger" — warm paper, near-black ink, one signal-orange
+accent, an editorial serif for display type and tabular numerals for data.
+Hairlines instead of boxes; colour is reserved for meaning (status, scores).
+
+Every component returns an HTML string rendered with render(). Any text that
+may come from users, documents, the web or the LLM goes through `esc()` first.
 """
 from html import escape
 from typing import Iterable, Optional
@@ -14,22 +17,25 @@ import streamlit as st
 # ============== Tokens ==============
 
 COLORS = {
-    "bg": "#07080d",
-    "surface": "rgba(255,255,255,0.035)",
-    "border": "rgba(255,255,255,0.08)",
-    "text": "#e7e9f0",
-    "muted": "#8b91a7",
-    "violet": "#8b5cf6",
-    "cyan": "#22d3ee",
-    "green": "#34d399",
-    "amber": "#fbbf24",
-    "red": "#f87171",
+    "bg": "#f4f2ec",
+    "paper": "#fbfaf6",
+    "ink": "#141412",
+    "text": "#141412",
+    "muted": "#6f6b62",
+    "faint": "#a19c91",
+    "line": "#e2ddd2",
+    "accent": "#ff4f00",
+    "violet": "#ff4f00",   # legacy key: primary accent
+    "cyan": "#141412",     # legacy key: secondary accent (ink)
+    "green": "#157a4a",
+    "amber": "#b7791f",
+    "red": "#c2362b",
 }
 
 RECOMMENDATION_STYLE = {
-    "APPROVED": ("green", "✓ Approved"),
-    "REVIEW": ("amber", "◐ Needs review"),
-    "REJECTED": ("red", "✕ Rejected"),
+    "APPROVED": ("green", "Approved"),
+    "REVIEW": ("amber", "Needs review"),
+    "REJECTED": ("red", "Rejected"),
 }
 
 
@@ -60,192 +66,223 @@ def render(html: str, slot=None):
 
 CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
 :root {
-  --bg: #07080d; --surface: rgba(255,255,255,0.035); --surface-2: rgba(255,255,255,0.06);
-  --border: rgba(255,255,255,0.08); --text: #e7e9f0; --muted: #8b91a7;
-  --violet: #8b5cf6; --cyan: #22d3ee; --green: #34d399; --amber: #fbbf24; --red: #f87171;
-  --grad: linear-gradient(120deg, #8b5cf6 0%, #6366f1 45%, #22d3ee 100%);
+  --bg: #f4f2ec; --paper: #fbfaf6; --ink: #141412; --muted: #6f6b62; --faint: #a19c91;
+  --line: #e2ddd2; --line-strong: #cfc9bc; --accent: #ff4f00; --accent-soft: #fff1ea;
+  --green: #157a4a; --amber: #b7791f; --red: #c2362b;
+  --serif: 'Instrument Serif', Georgia, serif;
+  --sans: 'Geist', system-ui, -apple-system, sans-serif;
+  --mono: 'Geist Mono', ui-monospace, monospace;
 }
-html, body, [class*="css"], .stApp, .stMarkdown, button, input, textarea, select {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
-}
-code, pre, .mono { font-family: 'JetBrains Mono', ui-monospace, monospace !important; }
-
-.stApp {
-  background:
-    radial-gradient(900px 500px at 85% -10%, rgba(139,92,246,0.16), transparent 60%),
-    radial-gradient(700px 400px at -10% 20%, rgba(34,211,238,0.10), transparent 60%),
-    var(--bg);
-  color: var(--text);
-}
+html, body, .stApp, .stMarkdown, button, input, textarea, select, label, p { font-family: var(--sans) !important; }
+.stApp { background: var(--bg); color: var(--ink); }
 header[data-testid="stHeader"] { background: transparent; }
-#MainMenu, footer, [data-testid="stDecoration"] { visibility: hidden; height: 0; }
-.block-container { padding-top: 2.2rem; padding-bottom: 4rem; max-width: 1240px; }
+#MainMenu, footer, [data-testid="stDecoration"], [data-testid="stStatusWidget"] { visibility: hidden; height: 0; }
+.block-container { padding-top: 2.6rem; padding-bottom: 5rem; max-width: 1180px; }
+.stMarkdown p, label { color: var(--ink); }
+::selection { background: var(--accent); color: white; }
 
-/* Sidebar */
-section[data-testid="stSidebar"] {
-  background: rgba(10,11,18,0.92);
-  border-right: 1px solid var(--border);
-  backdrop-filter: blur(12px);
-}
+/* ---------- Sidebar ---------- */
+section[data-testid="stSidebar"] { background: var(--ink); border-right: none; }
+section[data-testid="stSidebar"] * { color: #d9d5cb; }
 section[data-testid="stSidebar"] .stRadio > label { display: none; }
-section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] { gap: 2px; }
+section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] { gap: 0; }
 section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
-  padding: 9px 12px; border-radius: 10px; border: 1px solid transparent;
-  transition: background .15s ease, border-color .15s ease; width: 100%;
-}
-section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover { background: var(--surface-2); }
-section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:has(input:checked) {
-  background: linear-gradient(120deg, rgba(139,92,246,0.18), rgba(34,211,238,0.08));
-  border-color: rgba(139,92,246,0.35);
+  padding: 10px 12px; border-radius: 6px; width: 100%; transition: background .15s ease;
 }
 section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label > div:first-child { display: none; }
-section[data-testid="stSidebar"] .stRadio p { font-size: 0.92rem; font-weight: 500; }
+section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover { background: rgba(255,255,255,0.05); }
+section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:has(input:checked) { background: rgba(255,255,255,0.08); }
+section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:has(input:checked) p { color: #fff; }
+section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:has(input:checked)::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin: 0 10px 0 -2px; align-self: center;
+}
+section[data-testid="stSidebar"] .stRadio p { font-size: 0.9rem; font-weight: 500; color: #a8a398; }
+section[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] svg { fill: #a8a398; }
 
-/* Inputs */
-.stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] > div, .stNumberInput input {
-  background: rgba(255,255,255,0.03) !important; border: 1px solid var(--border) !important;
-  border-radius: 12px !important; color: var(--text) !important;
+/* ---------- Inputs ---------- */
+.stTextInput input, .stTextArea textarea, .stNumberInput input,
+.stSelectbox div[data-baseweb="select"] > div {
+  background: var(--paper) !important; border: 1px solid var(--line-strong) !important;
+  border-radius: 8px !important; color: var(--ink) !important; font-size: 0.98rem !important;
 }
 .stTextInput input:focus, .stTextArea textarea:focus {
-  border-color: rgba(139,92,246,0.6) !important; box-shadow: 0 0 0 3px rgba(139,92,246,0.18) !important;
+  border-color: var(--ink) !important; box-shadow: 0 0 0 3px rgba(20,20,18,0.08) !important;
 }
-label, .stMarkdown p { color: var(--text); }
+.stTextInput input::placeholder, .stTextArea textarea::placeholder { color: var(--faint) !important; }
+[data-testid="stWidgetLabel"] p { font-size: 0.8rem !important; font-weight: 500; color: var(--muted) !important; }
 
-/* Buttons */
+/* ---------- Buttons ---------- */
 .stButton > button, .stDownloadButton > button, .stFormSubmitButton > button {
-  border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2);
-  color: var(--text); font-weight: 600; padding: 0.55rem 1.1rem; transition: all .18s ease;
+  border-radius: 8px; border: 1px solid var(--line-strong); background: var(--paper);
+  color: var(--ink); font-weight: 500; padding: 0.55rem 1rem; box-shadow: none; transition: all .15s ease;
 }
-.stButton > button:hover, .stDownloadButton > button:hover { border-color: rgba(139,92,246,0.5); transform: translateY(-1px); }
+.stButton > button:hover, .stDownloadButton > button:hover { border-color: var(--ink); color: var(--ink); background: white; }
 .stButton > button[kind="primary"], .stFormSubmitButton > button[kind="primary"] {
-  background: var(--grad); border: none; color: white;
-  box-shadow: 0 8px 28px -8px rgba(139,92,246,0.65);
+  background: var(--ink); border: 1px solid var(--ink); color: #fff; font-weight: 600;
 }
-.stButton > button[kind="primary"]:hover { box-shadow: 0 10px 34px -6px rgba(139,92,246,0.85); }
+.stButton > button[kind="primary"]:hover, .stFormSubmitButton > button[kind="primary"]:hover {
+  background: var(--accent); border-color: var(--accent); color: #fff;
+}
+.stButton > button[kind="tertiary"] {
+  border: none; background: transparent; padding: 0; color: var(--ink); font-weight: 600;
+  text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 4px;
+}
+.stButton > button[kind="tertiary"]:hover { color: var(--accent); text-decoration-color: var(--accent); background: transparent; }
+
+/* Pills / toggles */
+[data-testid="stPills"] button, [data-testid="stButtonGroup"] button {
+  border-radius: 999px !important; background: var(--paper) !important; border: 1px solid var(--line-strong) !important;
+  color: var(--muted) !important; font-size: 0.85rem !important;
+}
+[data-testid="stPills"] button[aria-checked="true"], [data-testid="stButtonGroup"] button[kind="pillsActive"],
+[data-testid="stButtonGroup"] button[aria-checked="true"] {
+  background: var(--ink) !important; border-color: var(--ink) !important; color: #fff !important;
+}
+[data-testid="stButtonGroup"] button[kind="pillsActive"] p { color: #fff !important; }
 
 /* Tabs */
-.stTabs [data-baseweb="tab-list"] { gap: 6px; border-bottom: 1px solid var(--border); }
-.stTabs [data-baseweb="tab"] { border-radius: 10px 10px 0 0; padding: 10px 16px; color: var(--muted); }
-.stTabs [aria-selected="true"] { color: var(--text) !important; }
-.stTabs [data-baseweb="tab-highlight"] { background: var(--grad); height: 2px; }
+.stTabs [data-baseweb="tab-list"] { gap: 28px; border-bottom: 1px solid var(--line); }
+.stTabs [data-baseweb="tab"] { padding: 10px 0; color: var(--muted); background: transparent; }
+.stTabs [aria-selected="true"] { color: var(--ink) !important; }
+.stTabs [data-baseweb="tab-highlight"] { background: var(--ink); height: 2px; }
+.stTabs [data-baseweb="tab-border"] { display: none; }
 
-/* Expanders, uploader, status */
-[data-testid="stExpander"] { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
-[data-testid="stFileUploaderDropzone"] {
-  background: rgba(139,92,246,0.05); border: 1.5px dashed rgba(139,92,246,0.45); border-radius: 16px;
-}
-[data-testid="stStatusWidget"] { display: none; }
+/* Expanders, uploader, status, dataframe */
+[data-testid="stExpander"] { border: 1px solid var(--line); border-radius: 10px; background: var(--paper); }
+[data-testid="stExpander"] summary p { font-weight: 500; }
+[data-testid="stFileUploaderDropzone"] { background: var(--paper); border: 1px dashed var(--line-strong); border-radius: 12px; }
+[data-testid="stFileUploaderDropzone"]:hover { border-color: var(--ink); }
+[data-testid="stStatus"], [data-testid="stExpander"] details { background: var(--paper); }
+[data-testid="stDataFrame"] { border: 1px solid var(--line); border-radius: 10px; }
 
-/* ---------- Components ---------- */
-.eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 0.72rem; font-weight: 600;
-  letter-spacing: .14em; text-transform: uppercase; color: var(--cyan);
-  padding: 5px 11px; border: 1px solid rgba(34,211,238,0.3); border-radius: 999px; background: rgba(34,211,238,0.06); }
-.eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
-.hero h1 { font-size: 2.6rem; line-height: 1.1; font-weight: 800; letter-spacing: -0.03em; margin: 14px 0 10px; }
-.hero h1 .grad { background: var(--grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-.hero p { color: var(--muted); font-size: 1.05rem; max-width: 720px; margin: 0; }
-.page-head { margin-bottom: 22px; }
-.page-head h2 { font-size: 1.75rem; font-weight: 750; letter-spacing: -0.02em; margin: 10px 0 6px; }
-.page-head p { color: var(--muted); margin: 0; }
+/* ---------- Type ---------- */
+.eyebrow { font-family: var(--mono); font-size: 0.72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.eyebrow b { color: var(--accent); font-weight: 500; }
+.hero { padding: 8px 0 34px; border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+.hero h1 { font-family: var(--serif) !important; font-weight: 400; font-size: 4.4rem; line-height: 0.98;
+  letter-spacing: -0.02em; margin: 18px 0 20px; color: var(--ink); }
+.hero h1 em { font-style: italic; color: var(--accent); }
+.hero p { color: var(--muted); font-size: 1.08rem; max-width: 620px; margin: 0; line-height: 1.6; }
+.page-head { padding-bottom: 22px; margin-bottom: 26px; border-bottom: 1px solid var(--line); }
+.page-head h2 { font-family: var(--serif) !important; font-weight: 400; font-size: 3rem; line-height: 1;
+  letter-spacing: -0.015em; margin: 14px 0 10px; color: var(--ink); }
+.page-head p { color: var(--muted); margin: 0; font-size: 1rem; max-width: 640px; }
+.section-title { display: flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 0.7rem;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 34px 0 14px; }
+.section-title::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.num { font-family: var(--sans); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
 
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 20px 22px;
-  position: relative; overflow: hidden; }
-.card.glow::before { content: ""; position: absolute; inset: 0; border-radius: 18px; padding: 1px;
-  background: linear-gradient(140deg, rgba(139,92,246,0.55), transparent 40%, rgba(34,211,238,0.35));
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; }
-.card h4 { margin: 0 0 6px; font-size: 1rem; font-weight: 650; }
-.card p { margin: 0; color: var(--muted); font-size: 0.9rem; line-height: 1.55; }
-.card .icon { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; font-size: 1.1rem;
-  background: linear-gradient(140deg, rgba(139,92,246,0.25), rgba(34,211,238,0.12)); margin-bottom: 14px; }
+/* ---------- Surfaces ---------- */
+.card { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 22px 24px; }
+.card h4 { margin: 0 0 8px; font-size: 1rem; font-weight: 600; color: var(--ink); }
+.card p { margin: 0; color: var(--muted); font-size: 0.93rem; line-height: 1.6; }
+.card.ink { background: var(--ink); border-color: var(--ink); }
+.card.ink, .card.ink p, .card.ink h4 { color: #e9e5db; }
 
-.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px 18px; }
-.kpi .label { color: var(--muted); font-size: 0.78rem; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; }
-.kpi .value { font-size: 1.7rem; font-weight: 750; letter-spacing: -0.02em; margin-top: 6px; }
-.kpi .sub { color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
+.kpi { border-top: 1px solid var(--ink); padding: 14px 0 4px; }
+.kpi .label { font-family: var(--mono); color: var(--muted); font-size: 0.68rem; text-transform: uppercase; letter-spacing: .12em; }
+.kpi .value { font-size: 2.3rem; font-weight: 500; letter-spacing: -0.03em; margin-top: 10px; line-height: 1;
+  font-variant-numeric: tabular-nums; color: var(--ink); }
+.kpi .sub { color: var(--muted); font-size: 0.82rem; margin-top: 8px; }
 
-.pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
-  font-size: 0.78rem; font-weight: 600; border: 1px solid; }
-.chip { display: inline-block; padding: 4px 10px; margin: 3px 4px 3px 0; border-radius: 8px; font-size: 0.8rem;
-  background: var(--surface-2); border: 1px solid var(--border); color: var(--text); }
+.feature { border-top: 1px solid var(--line-strong); padding: 18px 0 6px; }
+.feature .n { font-family: var(--mono); font-size: 0.72rem; color: var(--accent); }
+.feature h4 { font-family: var(--serif); font-weight: 400; font-size: 1.6rem; margin: 10px 0 8px; line-height: 1.05; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.feature p { color: var(--muted); font-size: 0.9rem; line-height: 1.55; margin: 0 0 8px; min-height: 3em; }
 
-/* Pipeline */
-.pipeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; position: relative; }
-.step { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px; position: relative;
-  transition: all .3s ease; }
-.step .num { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--muted); }
-.step .name { font-weight: 700; font-size: 1.02rem; margin: 6px 0 4px; letter-spacing: .02em; }
-.step .desc { color: var(--muted); font-size: 0.82rem; line-height: 1.45; min-height: 2.4em; }
-.step .state { margin-top: 10px; font-size: 0.75rem; font-weight: 600; }
-.step.active { border-color: rgba(139,92,246,0.8); box-shadow: 0 0 0 1px rgba(139,92,246,0.4), 0 12px 40px -12px rgba(139,92,246,0.7);
-  animation: pulse 1.6s ease-in-out infinite; }
-.step.done { border-color: rgba(52,211,153,0.45); }
-.step.skipped { opacity: 0.45; }
-.step:not(:last-child)::after { content: "→"; position: absolute; right: -13px; top: 50%; transform: translateY(-50%);
-  color: var(--muted); font-size: 0.9rem; z-index: 2; }
-@keyframes pulse { 0%,100% { box-shadow: 0 0 0 1px rgba(139,92,246,0.35), 0 10px 30px -14px rgba(139,92,246,0.6); }
-  50% { box-shadow: 0 0 0 1px rgba(139,92,246,0.7), 0 14px 46px -10px rgba(139,92,246,0.95); } }
+.pill { display: inline-flex; align-items: center; gap: 7px; padding: 4px 11px; border-radius: 999px;
+  font-size: 0.8rem; font-weight: 600; }
+.pill .d { width: 7px; height: 7px; border-radius: 50%; }
+.chip { display: inline-block; padding: 5px 11px; margin: 3px 6px 3px 0; border-radius: 999px; font-size: 0.82rem;
+  background: var(--paper); border: 1px solid var(--line-strong); color: var(--ink); }
 
-/* Reasoning log */
-.log { margin-top: 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; background: rgba(0,0,0,0.35);
-  border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; line-height: 1.7; }
-.log .row { display: flex; gap: 10px; }
-.log .t { color: var(--violet); min-width: 76px; }
-.log .m { color: #c9cde0; }
+/* ---------- Pipeline ---------- */
+.pipe { display: grid; grid-template-columns: repeat(4, 1fr); position: relative; padding-top: 6px; }
+.pipe::before { content: ""; position: absolute; top: 18px; left: 12px; right: 12px; height: 1px; background: var(--line-strong); }
+.node { position: relative; padding-right: 22px; }
+.node .dot { width: 25px; height: 25px; border-radius: 50%; background: var(--bg); border: 1px solid var(--line-strong);
+  display: grid; place-items: center; font-family: var(--mono); font-size: 0.66rem; color: var(--muted); position: relative; z-index: 1; }
+.node .name { font-family: var(--mono); font-size: 0.74rem; letter-spacing: .14em; margin: 16px 0 6px; color: var(--ink); }
+.node .desc { color: var(--muted); font-size: 0.86rem; line-height: 1.5; min-height: 2.6em; }
+.node .state { margin-top: 10px; font-family: var(--mono); font-size: 0.7rem; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
+.node.active .dot { background: var(--accent); border-color: var(--accent); color: white; animation: ping 1.4s ease-out infinite; }
+.node.active .state { color: var(--accent); }
+.node.done .dot { background: var(--ink); border-color: var(--ink); color: white; }
+.node.done .state { color: var(--green); }
+.node.skipped { opacity: 0.5; }
+.node.skipped .dot { border-style: dashed; }
+.node.skipped .name { text-decoration: line-through; text-decoration-color: var(--faint); }
+@keyframes ping { 0% { box-shadow: 0 0 0 0 rgba(255,79,0,0.45); } 100% { box-shadow: 0 0 0 12px rgba(255,79,0,0); } }
 
-/* Scores */
-.ring-wrap { display: flex; align-items: center; gap: 22px; }
-.ring-meta .big { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
-.crit { padding: 14px 0; border-bottom: 1px solid var(--border); }
-.crit:last-child { border-bottom: none; }
+/* Reasoning log: the one dark "terminal" surface */
+.log { margin-top: 22px; font-family: var(--mono); font-size: 0.8rem; background: var(--ink); color: #d9d5cb;
+  border-radius: 10px; padding: 16px 18px; line-height: 1.85; }
+.log .row { display: flex; gap: 14px; }
+.log .t { color: var(--accent); min-width: 84px; }
+.log .m { color: #e9e5db; }
+.log .idle { color: #8a857a; }
+
+/* ---------- Scores ---------- */
+.verdict { display: flex; align-items: center; gap: 26px; }
+.verdict .big { font-family: var(--mono); font-size: 0.68rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.crit { padding: 16px 0; border-bottom: 1px solid var(--line); }
+.crit:first-child { padding-top: 2px; }
+.crit:last-child { border-bottom: none; padding-bottom: 2px; }
 .crit .top { display: flex; justify-content: space-between; align-items: baseline; }
-.crit .nm { font-weight: 650; text-transform: capitalize; }
-.crit .sc { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
-.bar { height: 7px; border-radius: 99px; background: rgba(255,255,255,0.06); margin: 8px 0 8px; overflow: hidden; }
+.crit .nm { font-weight: 600; text-transform: capitalize; }
+.crit .sc { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 1.05rem; }
+.bar { height: 4px; border-radius: 99px; background: var(--line); margin: 10px 0; overflow: hidden; }
 .bar > span { display: block; height: 100%; border-radius: 99px; }
-.crit .why { color: var(--muted); font-size: 0.86rem; line-height: 1.55; }
+.crit .why { color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
 
-/* Fields */
-.fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
-.field { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
-.field .k { color: var(--muted); font-size: 0.74rem; text-transform: uppercase; letter-spacing: .08em; }
-.field .v { font-weight: 650; margin: 6px 0 10px; word-break: break-word; }
-.field .conf { display: flex; align-items: center; gap: 8px; font-size: 0.72rem; color: var(--muted); }
-.field .conf .bar { flex: 1; margin: 0; height: 5px; }
+/* ---------- Fields ---------- */
+.fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
+.field { padding: 16px 18px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--paper); }
+.field .k { font-family: var(--mono); color: var(--muted); font-size: 0.66rem; text-transform: uppercase; letter-spacing: .12em; }
+.field .v { font-weight: 600; font-size: 1.02rem; margin: 8px 0 12px; word-break: break-word; font-variant-numeric: tabular-nums; }
+.field .conf { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 0.68rem; color: var(--muted); }
+.field .conf .bar { flex: 1; margin: 0; height: 3px; }
 
-/* SWOT */
-.swot { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.swot .q { border-radius: 16px; padding: 18px; border: 1px solid; }
-.swot .q h5 { margin: 0 0 10px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: .1em; }
-.swot .q ul { margin: 0; padding-left: 18px; }
-.swot .q li { margin: 6px 0; font-size: 0.9rem; line-height: 1.45; color: #d7dae6; }
+/* ---------- SWOT ---------- */
+.swot { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--ink); }
+.swot .q { padding: 22px 24px 22px 0; border-bottom: 1px solid var(--line); }
+.swot .q:nth-child(odd) { border-right: 1px solid var(--line); }
+.swot .q:nth-child(even) { padding-left: 24px; padding-right: 0; }
+.swot .q h5 { margin: 0 0 12px; font-family: var(--serif); font-weight: 400; font-size: 1.6rem; display: flex; align-items: center; gap: 10px; }
+.swot .q h5 .d { width: 8px; height: 8px; border-radius: 50%; }
+.swot .q ul { margin: 0 !important; padding: 0 !important; list-style: none; }
+.swot .q li { margin: 0 !important; padding: 7px 0; font-size: 0.93rem; line-height: 1.45; border-top: 1px dashed var(--line); color: var(--ink); }
 
-/* Result list */
-.result { padding: 14px 0; border-bottom: 1px solid var(--border); }
-.result:last-child { border-bottom: none; }
-.result a { color: var(--text); font-weight: 600; text-decoration: none; }
-.result a:hover { color: var(--cyan); }
-.result p { color: var(--muted); font-size: 0.87rem; margin: 6px 0 4px; line-height: 1.55; }
-.result .url { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: #6b7190; }
+/* ---------- Result list ---------- */
+.result { padding: 16px 0; border-bottom: 1px solid var(--line); }
+.result:first-child { padding-top: 0; }
+.result:last-child { border-bottom: none; padding-bottom: 0; }
+.result a { color: var(--ink); font-weight: 600; text-decoration: none; }
+.result a:hover { color: var(--accent); }
+.result p { color: var(--muted); font-size: 0.9rem; margin: 6px 0; line-height: 1.6; }
+.result .url { font-family: var(--mono); font-size: 0.7rem; color: var(--faint); }
 
-.section-title { font-size: 0.78rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
-  color: var(--muted); margin: 26px 0 12px; }
-.brand { display: flex; align-items: center; gap: 10px; padding: 6px 4px 14px; }
-.brand .logo { width: 34px; height: 34px; border-radius: 10px; background: var(--grad); display: grid; place-items: center;
-  font-weight: 800; color: white; box-shadow: 0 6px 20px -6px rgba(139,92,246,0.8); }
-.brand .t1 { font-weight: 750; font-size: 0.98rem; letter-spacing: -0.01em; }
-.brand .t2 { color: var(--muted); font-size: 0.72rem; }
-.side-stat { display: flex; justify-content: space-between; font-size: 0.84rem; padding: 6px 2px; color: var(--muted); }
-.side-stat b { color: var(--text); font-weight: 600; }
-.status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 7px; }
+/* ---------- Sidebar pieces ---------- */
+.brand { padding: 4px 4px 26px; }
+.brand .mark { font-family: var(--serif); font-size: 1.7rem; color: #fff; line-height: 1; }
+.brand .mark em { color: var(--accent); font-style: italic; }
+.brand .t2 { font-family: var(--mono); font-size: 0.64rem; letter-spacing: .14em; text-transform: uppercase; color: #8a857a !important; margin-top: 8px; }
+.side-label { font-family: var(--mono); font-size: 0.64rem; letter-spacing: .14em; text-transform: uppercase;
+  color: #8a857a !important; margin: 28px 0 8px; padding: 0 2px; }
+.side-stat { display: flex; justify-content: space-between; font-size: 0.84rem; padding: 7px 2px; color: #a8a398;
+  border-bottom: 1px solid rgba(255,255,255,0.06); }
+.side-stat b { color: #fff !important; font-weight: 500; font-variant-numeric: tabular-nums; }
+.status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 8px; }
 
 @media (max-width: 900px) {
-  .pipeline { grid-template-columns: 1fr 1fr; }
-  .step:nth-child(2)::after { display: none; }
+  .hero h1 { font-size: 3rem; }
+  .page-head h2 { font-size: 2.3rem; }
+  .pipe { grid-template-columns: 1fr 1fr; row-gap: 22px; }
+  .pipe::before { display: none; }
   .swot { grid-template-columns: 1fr; }
-  .hero h1 { font-size: 2rem; }
+  .swot .q, .swot .q:nth-child(even) { padding: 18px 0; border-right: none; }
 }
 </style>
 """
@@ -258,9 +295,11 @@ def inject_css():
 # ============== Components ==============
 
 def page_header(eyebrow: str, title: str, subtitle: str) -> str:
+    number, _, label = eyebrow.partition("·")
+    eyebrow_html = f"<b>{esc(number.strip())}</b> — {esc(label.strip())}" if label else esc(eyebrow)
     return f"""
     <div class="page-head">
-    <span class="eyebrow"><span class="dot"></span>{esc(eyebrow)}</span>
+    <div class="eyebrow">{eyebrow_html}</div>
     <h2>{esc(title)}</h2>
     <p>{esc(subtitle)}</p>
     </div>
@@ -282,10 +321,10 @@ def kpi(label: str, value, sub: str = "", color: Optional[str] = None) -> str:
     """
 
 
-def feature_card(icon: str, title: str, body: str, glow: bool = False) -> str:
+def feature_card(number: str, title: str, body: str, glow: bool = False) -> str:
     return f"""
-    <div class="card{' glow' if glow else ''}">
-    <div class="icon">{icon}</div>
+    <div class="feature">
+    <div class="n">{esc(number)}</div>
     <h4>{esc(title)}</h4>
     <p>{esc(body)}</p>
     </div>
@@ -294,13 +333,12 @@ def feature_card(icon: str, title: str, body: str, glow: bool = False) -> str:
 
 def pill(text: str, color_key: str) -> str:
     c = COLORS[color_key]
-    return f'<span class="pill" style="color:{c};border-color:{c}55;background:{c}14">{esc(text)}</span>'
+    return (f'<span class="pill" style="color:{c};background:{c}14;border:1px solid {c}33">'
+            f'<span class="d" style="background:{c}"></span>{esc(text)}</span>')
 
 
 def recommendation_pill(recommendation: str) -> str:
     color_key, label = RECOMMENDATION_STYLE.get(str(recommendation).upper(), ("muted", str(recommendation)))
-    if color_key == "muted":
-        return f'<span class="chip">{esc(label)}</span>'
     return pill(label, color_key)
 
 
@@ -310,16 +348,16 @@ def chips(items: Iterable) -> str:
 
 PIPELINE_STEPS = [
     ("retrieve", "RETRIEVE", "Semantic search over your private ChromaDB knowledge base"),
-    ("grade", "GRADE", "LLM scores whether local data can answer the question"),
-    ("web_search", "SEARCH", "Deep web research with Serper + Tavily, only if needed"),
+    ("grade", "GRADE", "The LLM decides whether local data can answer the question"),
+    ("web_search", "SEARCH", "Deep web research with Serper + Tavily, only when needed"),
     ("generate", "GENERATE", "Weighted scores, reasoning and extracted bid variables"),
 ]
 
 STEP_STATE_LABEL = {
-    "idle": ("Waiting", COLORS["muted"]),
-    "active": ("● Running", COLORS["violet"]),
-    "done": ("✓ Complete", COLORS["green"]),
-    "skipped": ("— Skipped", COLORS["muted"]),
+    "idle": "Waiting",
+    "active": "Running",
+    "done": "Complete",
+    "skipped": "Skipped",
 }
 
 
@@ -329,17 +367,16 @@ def pipeline(states: Optional[dict] = None, notes: Optional[dict] = None) -> str
     cells = []
     for i, (key, name, desc) in enumerate(PIPELINE_STEPS, 1):
         state = states.get(key, "idle")
-        label, color = STEP_STATE_LABEL[state]
-        detail = notes.get(key, desc)
+        mark = "✓" if state == "done" else f"0{i}"
         cells.append(f"""
-        <div class="step {state}">
-        <div class="num">0{i}</div>
+        <div class="node {state}">
+        <div class="dot">{mark}</div>
         <div class="name">{name}</div>
-        <div class="desc">{esc(detail)}</div>
-        <div class="state" style="color:{color}">{label}</div>
+        <div class="desc">{esc(notes.get(key, desc))}</div>
+        <div class="state">{STEP_STATE_LABEL[state]}</div>
         </div>
         """)
-    return f'<div class="pipeline">{"".join(cells)}</div>'
+    return f'<div class="pipe">{"".join(cells)}</div>'
 
 
 def reasoning_log(rows: list[tuple[str, str]]) -> str:
@@ -347,25 +384,26 @@ def reasoning_log(rows: list[tuple[str, str]]) -> str:
         f'<div class="row"><span class="t">{esc(tag)}</span><span class="m">{esc(msg)}</span></div>'
         for tag, msg in rows
     )
-    return f'<div class="log">{body or "<span class=m>Waiting for the agent…</span>"}</div>'
+    return f'<div class="log">{body or "<span class=idle>$ waiting for a question_</span>"}</div>'
 
 
-def score_ring(score: float, size: int = 132, label: str = "Overall") -> str:
+def score_ring(score: float, size: int = 148, label: str = "Overall") -> str:
     score = max(0, min(100, float(score or 0)))
-    stroke = 11
-    r = (size - stroke) / 2
+    stroke = 3
+    r = (size - 14) / 2
     circ = 2 * 3.14159 * r
     offset = circ * (1 - score / 100)
     color = score_color(score)
+    c = size / 2
     return f"""
     <svg width="{size}" height="{size}" viewBox="0 0 {size} {size}" role="img" aria-label="{esc(label)} score {score:.0f} of 100">
-    <circle cx="{size/2}" cy="{size/2}" r="{r}" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="{stroke}"/>
-    <circle cx="{size/2}" cy="{size/2}" r="{r}" fill="none" stroke="{color}" stroke-width="{stroke}" stroke-linecap="round"
-    stroke-dasharray="{circ:.1f}" stroke-dashoffset="{offset:.1f}" transform="rotate(-90 {size/2} {size/2})"
-    style="filter: drop-shadow(0 0 10px {color}66)"/>
-    <text x="50%" y="48%" text-anchor="middle" dominant-baseline="middle" fill="#e7e9f0"
-    font-family="Inter" font-size="{size*0.27:.0f}" font-weight="800">{score:.0f}</text>
-    <text x="50%" y="68%" text-anchor="middle" fill="#8b91a7" font-family="Inter" font-size="{size*0.09:.0f}">/ 100</text>
+    <circle cx="{c}" cy="{c}" r="{r}" fill="none" stroke="#e2ddd2" stroke-width="{stroke}"/>
+    <circle cx="{c}" cy="{c}" r="{r}" fill="none" stroke="{color}" stroke-width="{stroke + 1}" stroke-linecap="round"
+    stroke-dasharray="{circ:.1f}" stroke-dashoffset="{offset:.1f}" transform="rotate(-90 {c} {c})"/>
+    <text x="50%" y="52%" text-anchor="middle" dominant-baseline="middle" fill="#141412"
+    font-family="Instrument Serif, Georgia, serif" font-size="{size * 0.42:.0f}">{score:.0f}</text>
+    <text x="50%" y="75%" text-anchor="middle" fill="#6f6b62" font-family="Geist Mono, monospace"
+    font-size="{size * 0.07:.0f}" letter-spacing="1.5">/ 100</text>
     </svg>
     """
 
@@ -373,13 +411,14 @@ def score_ring(score: float, size: int = 132, label: str = "Overall") -> str:
 def score_summary(score: float, recommendation: str, confidence: Optional[float], title: str) -> str:
     conf = f"{float(confidence):.0%}" if confidence is not None else "—"
     return f"""
-    <div class="card glow">
-    <div class="ring-wrap">
+    <div class="card">
+    <div class="verdict">
     {score_ring(score)}
-    <div class="ring-meta">
+    <div>
     <div class="big">{esc(title)}</div>
-    <div style="font-size:1.35rem;font-weight:750;margin:6px 0 10px">{recommendation_pill(recommendation)}</div>
-    <div style="color:var(--muted);font-size:0.86rem">Model confidence <b style="color:var(--text)">{conf}</b></div>
+    <div style="margin:12px 0 14px">{recommendation_pill(recommendation)}</div>
+    <div style="color:var(--muted);font-size:0.86rem">Model confidence
+    <b class="num" style="color:var(--ink)">{conf}</b></div>
     </div>
     </div>
     </div>
@@ -398,7 +437,7 @@ def criteria_breakdown(breakdown: dict) -> str:
         rows.append(f"""
         <div class="crit">
         <div class="top"><span class="nm">{esc(name)}</span><span class="sc" style="color:{color}">{score:.0f}</span></div>
-        <div class="bar"><span style="width:{score}%;background:linear-gradient(90deg,{color}aa,{color})"></span></div>
+        <div class="bar"><span style="width:{score}%;background:{color}"></span></div>
         <div class="why">{esc(reasoning)}</div>
         </div>
         """)
@@ -406,7 +445,7 @@ def criteria_breakdown(breakdown: dict) -> str:
 
 
 def extracted_fields(fields: dict) -> str:
-    """Render {name: value} or {name: {value, confidence, source}} as field cards."""
+    """Render {name: value} or {name: {value, confidence, source}} as a ledger grid."""
     cards = []
     for key, raw in fields.items():
         if isinstance(raw, dict) and "value" in raw:
@@ -421,10 +460,10 @@ def extracted_fields(fields: dict) -> str:
         if confidence is not None:
             pct = float(confidence) * 100
             conf_html = f"""
-            <div class="conf"><div class="bar"><span style="width:{pct:.0f}%;background:{score_color(pct)}"></span></div>
+            <div class="conf"><div class="bar"><span style="width:{pct:.0f}%;background:var(--ink)"></span></div>
             {pct:.0f}%</div>
             """
-        src = f'<div class="conf" style="margin-top:6px">{esc(source)}</div>' if source else ""
+        src = f'<div class="conf" style="margin-top:8px">{esc(source)}</div>' if source else ""
         cards.append(f"""
         <div class="field">
         <div class="k">{esc(key.replace('_', ' '))}</div>
@@ -441,16 +480,15 @@ def swot_grid(swot: dict) -> str:
     quadrants = [
         ("strengths", "Strengths", "green"),
         ("weaknesses", "Weaknesses", "amber"),
-        ("opportunities", "Opportunities", "cyan"),
+        ("opportunities", "Opportunities", "accent"),
         ("threats", "Threats", "red"),
     ]
     cells = []
     for key, title, color_key in quadrants:
-        c = COLORS[color_key]
         items = "".join(f"<li>{esc(i)}</li>" for i in (swot.get(key) or [])[:5]) or "<li>—</li>"
         cells.append(f"""
-        <div class="q" style="border-color:{c}40;background:linear-gradient(160deg,{c}14,transparent 70%)">
-        <h5 style="color:{c}">{title}</h5>
+        <div class="q">
+        <h5><span class="d" style="background:{COLORS[color_key]}"></span>{title}</h5>
         <ul>{items}</ul>
         </div>
         """)
@@ -463,7 +501,7 @@ def result_list(results: list[dict], limit: int = 5, snippet_len: int = 280) -> 
         title = r.get("title") or "Untitled"
         url = r.get("url") or ""
         content = (r.get("content") or r.get("snippet") or "")[:snippet_len]
-        link = f'<a href="{esc(url)}" target="_blank" rel="noopener">{esc(title)}</a>' if url else f"<b>{esc(title)}</b>"
+        link = f'<a href="{esc(url)}" target="_blank" rel="noopener">{esc(title)} ↗</a>' if url else f"<b>{esc(title)}</b>"
         rows.append(f"""
         <div class="result">
         {link}
@@ -477,11 +515,11 @@ def result_list(results: list[dict], limit: int = 5, snippet_len: int = 280) -> 
 
 
 def text_card(title: str, body: str, accent: Optional[str] = None) -> str:
-    border = f' style="border-left:3px solid {COLORS[accent]}"' if accent else ""
+    border = f' style="border-left:2px solid {COLORS[accent]}"' if accent else ""
     return f"""
     <div class="card"{border}>
     <h4>{esc(title)}</h4>
-    <p style="color:#cfd3e2">{esc(body).replace(chr(10), "<br>")}</p>
+    <p style="color:var(--ink);font-size:0.97rem;line-height:1.7">{esc(body).replace(chr(10), "<br>")}</p>
     </div>
     """
 
@@ -490,11 +528,11 @@ def status_row(label: str, ok: bool, detail: str, warn: bool = False) -> str:
     color = COLORS["green"] if ok else (COLORS["amber"] if warn else COLORS["red"])
     state = "Online" if ok else ("Not configured" if warn else "Offline")
     return f"""
-    <div class="card" style="padding:16px 18px;margin-bottom:12px">
+    <div class="card" style="padding:18px 20px;margin-bottom:12px">
     <div style="display:flex;justify-content:space-between;align-items:center">
-    <b>{esc(label)}</b>
-    <span style="color:{color};font-size:0.8rem;font-weight:600">
-    <span class="status-dot" style="background:{color};box-shadow:0 0 8px {color}"></span>{state}</span>
+    <b style="font-weight:600">{esc(label)}</b>
+    <span style="color:{color};font-family:var(--mono);font-size:0.7rem;letter-spacing:.08em;text-transform:uppercase">
+    <span class="status-dot" style="background:{color}"></span>{state}</span>
     </div>
     <p style="margin-top:6px">{esc(detail)}</p>
     </div>

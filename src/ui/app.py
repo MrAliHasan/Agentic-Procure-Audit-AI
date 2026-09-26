@@ -90,14 +90,14 @@ def count(stats: dict, name: str) -> int:
 
 
 PAGES = [
-    "◆  Command Center",
-    "⚡  Agentic Analysis",
-    "⚖️  Vendor Grading",
-    "🏢  Company Intelligence",
-    "📄  Document Intelligence",
-    "🌐  Market & Vendor Research",
-    "🗂️  Knowledge Base",
-    "⚙️  System",
+    "Overview",
+    "Agent Analysis",
+    "Vendor Grading",
+    "Company Intelligence",
+    "Document Intelligence",
+    "Market Research",
+    "Knowledge Base",
+    "System",
 ]
 
 
@@ -116,8 +116,8 @@ warm_up_embeddings()
 with st.sidebar:
     ui.render("""
     <div class="brand">
-    <div class="logo">◆</div>
-    <div><div class="t1">Procure-Audit AI</div><div class="t2">Agentic procurement intelligence</div></div>
+    <div class="mark">Procure<em>/</em>Audit</div>
+    <div class="t2">Agentic procurement intelligence</div>
     </div>
     """)
     page = st.radio("Navigation", PAGES, key="page", label_visibility="collapsed")
@@ -126,11 +126,11 @@ with st.sidebar:
     llm_ok, llm_name = llm_label()
     dot = ui.COLORS["green"] if llm_ok else ui.COLORS["red"]
     ui.render(f"""
-    <div class="section-title" style="margin-top:22px">Knowledge base</div>
+    <div class="side-label">Knowledge base</div>
     <div class="side-stat"><span>Vendors</span><b>{count(stats, 'vendors')}</b></div>
     <div class="side-stat"><span>Documents</span><b>{count(stats, 'documents')}</b></div>
-    <div class="section-title">Engine</div>
-    <div class="side-stat"><span><span class="status-dot" style="background:{dot};box-shadow:0 0 8px {dot}"></span>LLM</span>
+    <div class="side-label">Engine</div>
+    <div class="side-stat"><span><span class="status-dot" style="background:{dot}"></span>LLM</span>
     <b style="font-size:0.78rem">{ui.esc(llm_name)}</b></div>
     <div class="side-stat"><span>Web search</span><b>{'Serper + Tavily' if settings.serper_api_key and settings.tavily_api_key else ('Tavily' if settings.tavily_api_key else ('Serper' if settings.serper_api_key else 'Off'))}</b></div>
     """)
@@ -141,17 +141,16 @@ with st.sidebar:
 def page_command_center():
     ui.render("""
     <div class="hero">
-    <span class="eyebrow"><span class="dot"></span>Local-first · Explainable · Agentic</span>
-    <h1>Procurement decisions,<br><span class="grad">researched by an AI agent.</span></h1>
-    <p>Ask a question about vendors, bids or markets. The agent searches your private knowledge base,
-    decides whether it needs the web, and returns scored, evidence-backed recommendations.</p>
+    <div class="eyebrow"><b>●</b> Local-first — Explainable — Agentic</div>
+    <h1>Every vendor decision,<br><em>audited</em> by an agent.</h1>
+    <p>Ask about vendors, bids or markets. The agent searches your private knowledge base,
+    decides for itself whether it needs the web, and returns scores you can defend.</p>
     </div>
     """)
-    st.write("")
 
     llm_ok, llm_name = llm_label()
     web_on = bool(settings.tavily_api_key or settings.serper_api_key)
-    cols = st.columns(4)
+    cols = st.columns(4, gap="large")
     tiles = [
         ui.kpi("Vendors indexed", count(stats, "vendors"), "Semantic vendor memory"),
         ui.kpi("Documents indexed", count(stats, "documents"), "Bids · contracts · invoices"),
@@ -169,17 +168,16 @@ def page_command_center():
 
     ui.render(ui.section("Capabilities"))
     features = [
-        ("⚡", "Agentic Analysis", "Retrieve → Grade → Search → Generate, streamed live.", PAGES[1]),
-        ("⚖️", "Explainable Grading", "Price, quality, reliability and risk, each with reasoning.", PAGES[2]),
-        ("🏢", "Company Intelligence", "Executive summary, SWOT, risks and market position.", PAGES[3]),
-        ("📄", "Document OCR", "Native + scanned PDFs and images into structured fields.", PAGES[4]),
+        ("01", "Agent Analysis", "Retrieve, grade, search and generate — streamed live.", PAGES[1]),
+        ("02", "Vendor Grading", "Price, quality, reliability and risk, each with its reasoning.", PAGES[2]),
+        ("03", "Company Intelligence", "Executive brief, SWOT, risks and market position.", PAGES[3]),
+        ("04", "Document OCR", "Native and scanned PDFs or photos into structured fields.", PAGES[4]),
     ]
-    cols = st.columns(4)
-    for col, (icon, title, body, target) in zip(cols, features):
+    cols = st.columns(4, gap="large")
+    for col, (number, title, body, target) in zip(cols, features):
         with col:
-            ui.render(ui.feature_card(icon, title, body, glow=title == "Agentic Analysis"))
-            st.button(f"Open {title}", key=f"go_{title}", on_click=go_to, args=(target,),
-                      use_container_width=True)
+            ui.render(ui.feature_card(number, title, body))
+            st.button("Open  →", key=f"go_{title}", on_click=go_to, args=(target,), type="tertiary")
 
 
 # ============== Agentic Analysis ==============
@@ -262,7 +260,7 @@ def render_analysis_result(result: dict):
         if findings:
             ui.render(ui.section("Key findings"))
             ui.render('<div class="card">' + "".join(
-                f'<p style="margin:6px 0;color:#d7dae6">▸ {ui.esc(f)}</p>' for f in findings) + "</div>")
+                f'<p style="margin:8px 0;color:var(--ink)"><span style="color:var(--accent)">—</span>&nbsp; {ui.esc(f)}</p>' for f in findings) + "</div>")
     with right:
         ui.render(ui.section("Score breakdown — every number is explained"))
         if analysis.get("breakdown"):
@@ -282,7 +280,7 @@ def render_analysis_result(result: dict):
             st.json(result)
     with c2:
         st.download_button(
-            "⬇  Download report (JSON)",
+            "Download report (JSON)",
             data=json.dumps(result, indent=2, default=str),
             file_name=f"analysis_{time.strftime('%Y%m%d_%H%M%S')}.json",
             mime="application/json",
@@ -293,7 +291,7 @@ def render_analysis_result(result: dict):
 def page_analysis():
     ui.render(ui.page_header(
         "Feature 01 · LangGraph agent",
-        "Agentic Analysis",
+        "Agent Analysis",
         "Watch the agent retrieve, grade, research and score, one node at a time.",
     ))
 
@@ -415,7 +413,7 @@ def page_grading():
                 ui.render(ui.criteria_breakdown(analysis.breakdown))
             with st.expander("Full audit report (Markdown)"):
                 st.markdown(report)
-            st.download_button("⬇  Download report", report, file_name=f"{analysis.vendor_name}_grade.md")
+            st.download_button("Download report", report, file_name=f"{analysis.vendor_name}_grade.md")
 
     with tab2:
         vendors_input = st.text_area("Vendors to compare (one per line)",
@@ -439,13 +437,13 @@ def page_grading():
             for rank, a in enumerate(comparison.get("analyses", []), 1):
                 score = a.get("overall_score", 0)
                 color = ui.score_color(score)
-                medal = {1: "🥇", 2: "🥈", 3: "🥉"}.get(rank, f"#{rank}")
+                medal = f"{rank:02d}"
                 ui.render(f"""
                 <div class="card" style="display:flex;align-items:center;gap:18px;margin-bottom:10px;padding:14px 20px">
-                <div style="font-size:1.4rem;width:36px">{medal}</div>
+                <div style="font-family:var(--serif);font-size:1.8rem;width:44px;color:{'var(--accent)' if rank == 1 else 'var(--faint)'}">{medal}</div>
                 <div style="flex:1"><b>{ui.esc(a.get('vendor_name', ''))}</b>
                 <div class="bar"><span style="width:{score}%;background:{color}"></span></div></div>
-                <div style="font-family:'JetBrains Mono';font-weight:700;color:{color};width:56px;text-align:right">{score}</div>
+                <div style="font-variant-numeric:tabular-nums;font-weight:600;font-size:1.15rem;color:{color};width:56px;text-align:right">{score}</div>
                 <div style="width:150px;text-align:right">{ui.recommendation_pill(a.get('recommendation', ''))}</div>
                 </div>
                 """)
@@ -492,9 +490,9 @@ def page_company():
     facts = [("Industry", p.industry), ("Headquarters", p.hq_location), ("Founded", p.founded),
              ("Employees", p.employees)]
     ui.render(f"""
-    <div class="card glow" style="margin-top:8px">
+    <div class="card" style="margin-top:8px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
-    <div><div style="font-size:1.8rem;font-weight:800;letter-spacing:-0.02em">{ui.esc(p.name)}</div>
+    <div><div style="font-family:var(--serif);font-size:2.6rem;line-height:1">{ui.esc(p.name)}</div>
     <div style="color:var(--muted);margin-top:4px">{ui.esc(p.website)}</div></div>
     <div>{ui.pill(f'{p.search_queries_used} queries · {p.sources_scraped} sources', 'violet')}</div>
     </div>
@@ -536,13 +534,13 @@ def page_company():
         if p.key_risks:
             ui.render(ui.section("Key risks"))
             ui.render('<div class="card">' + "".join(
-                f'<p style="margin:7px 0;color:#d7dae6"><span style="color:var(--red)">●</span> {ui.esc(r)}</p>'
+                f'<p style="margin:7px 0;color:var(--ink)"><span style="color:var(--red)">●</span> {ui.esc(r)}</p>'
                 for r in p.key_risks[:6]) + "</div>")
     with c2:
         if p.opportunities:
             ui.render(ui.section("Opportunities"))
             ui.render('<div class="card">' + "".join(
-                f'<p style="margin:7px 0;color:#d7dae6"><span style="color:var(--green)">●</span> {ui.esc(o)}</p>'
+                f'<p style="margin:7px 0;color:var(--ink)"><span style="color:var(--green)">●</span> {ui.esc(o)}</p>'
                 for o in p.opportunities[:6]) + "</div>")
 
     if p.competitors:
@@ -554,7 +552,7 @@ def page_company():
     if p.data_sources:
         with st.expander(f"Sources ({len(p.data_sources)})"):
             ui.render(ui.result_list(p.data_sources, limit=25, snippet_len=180))
-    st.download_button("⬇  Download full report (Markdown)", md, file_name=f"{p.name}_intelligence.md")
+    st.download_button("Download full report (Markdown)", md, file_name=f"{p.name}_intelligence.md")
 
 
 # ============== Document Intelligence ==============
@@ -714,7 +712,7 @@ def page_knowledge_base():
                 <div class="crit">
                 <div class="top"><span class="nm" style="text-transform:none">{ui.esc(meta.get('name', r.get('id')))}</span>
                 <span class="sc" style="color:{ui.score_color(score)}">{score / 100:.2f}</span></div>
-                <div class="bar"><span style="width:{score:.0f}%;background:var(--grad)"></span></div>
+                <div class="bar"><span style="width:{score:.0f}%;background:var(--ink)"></span></div>
                 <div class="why">{ui.esc(meta.get('industry', ''))} {('· ' + ui.esc(meta.get('products'))) if meta.get('products') else ''}</div>
                 </div>
                 """)
