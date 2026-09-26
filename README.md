@@ -6,6 +6,17 @@
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
 [![LangGraph](https://img.shields.io/badge/LangGraph-Agentic_AI-green)](https://langchain.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![CI](https://github.com/MrAliHasan/Agentic-Procure-Audit-AI/actions/workflows/ci.yml/badge.svg)](https://github.com/MrAliHasan/Agentic-Procure-Audit-AI/actions/workflows/ci.yml)
+
+![Agentic Procure-Audit AI dashboard](docs/screenshots/02-agent-analysis.png)
+
+<p align="center"><i>The agent grades its own knowledge base, skips the web when it doesn't need it, and explains every score.</i></p>
+
+```bash
+pip install -e .          # install
+cp .env.example .env      # add your API keys
+soi ui                    # open the dashboard at http://localhost:8501
+```
 
 ---
 
